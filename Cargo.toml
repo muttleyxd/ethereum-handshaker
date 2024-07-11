@@ -1,0 +1,14 @@
+[package]
+name = "ethereum-handshaker"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+async-trait = { version = "0.1" }
+ecies = { version = "0.2.7", features = ["std"] }
+keccak-hash = { version = "0.10" }
+secp256k1 = { version = "0.29", features = ["rand-std"] }
+serde = { version = "1.0" }
+serde_json = { version = "1.0" }
+thiserror = { version = "1.0" }
+tokio = { version = "1.38", features = ["net", "rt", "rt-multi-thread", "macros"] }
