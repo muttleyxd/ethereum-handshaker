@@ -1,25 +1,20 @@
-use crate::{dto::Status, error::EthereumHandshakerError};
+use crate::{error::EthereumHandshakerError};
 
+// todo: remove this
+#[allow(dead_code)]
 mod dto;
-mod error;
-mod keypair;
-mod transport_protocol;
+#[allow(dead_code)]
 mod encryption;
+#[allow(dead_code)]
+mod error;
+#[allow(dead_code)]
+mod keypair;
+#[allow(dead_code)]
+mod transport_protocol;
 
 #[tokio::main]
 async fn main() -> Result<(), EthereumHandshakerError> {
     println!("Hello, world!");
 
     Ok(())
-}
-
-fn create_status_message() {
-    // let message = Status{
-    //     version: 0,
-    //     network_id: NetworkId::Olympic,
-    //     total_difficulty: 0,
-    //     blockhash: vec![],
-    //     genesis: vec![],
-    //     fork_identifier: ForkIdentifier {},
-    // }
 }

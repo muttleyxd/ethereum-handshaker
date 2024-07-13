@@ -1,4 +1,4 @@
-use secp256k1::{rand::rngs::OsRng, PublicKey, Secp256k1, SecretKey};
+use ecies::{PublicKey, SecretKey};
 
 pub struct Keypair {
     pub public_key: PublicKey,
@@ -6,8 +6,7 @@ pub struct Keypair {
 }
 
 pub(super) fn generate_keypair() -> Keypair {
-    let secp = Secp256k1::new();
-    let (secret_key, public_key) = secp.generate_keypair(&mut OsRng);
+    let (secret_key, public_key) = ecies::utils::generate_keypair();
 
     Keypair {
         public_key,
@@ -15,13 +14,14 @@ pub(super) fn generate_keypair() -> Keypair {
     }
 }
 
-pub(super) fn keypair_from_secret_key(bytes: &[u8; 32]) -> Result<Keypair, secp256k1::Error> {
-    let secp = Secp256k1::new();
-    let secret_key = SecretKey::from_slice(bytes)?;
-    let public_key = PublicKey::from_secret_key(&secp, &secret_key);
+pub(super) fn keypair_from_secret_key(
+    bytes: &[u8; 32],
+) -> Result<Keypair, libsecp256k1_core::Error> {
+    let secret_key = SecretKey::parse(bytes)?;
+    let public_key = PublicKey::from_secret_key(&secret_key);
 
     Ok(Keypair {
-        secret_key,
         public_key,
+        secret_key,
     })
 }
