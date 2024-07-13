@@ -1,11 +1,11 @@
 use thiserror::Error;
 
-use crate::NodeInfoCreateError;
+use crate::peers::recipient::RecipientCreateError;
 
 #[derive(Debug, Error)]
 pub enum EthereumHandshakerError {
     #[error("IO error: `{0}`")]
-    IoError(#[from] std::io::Error),
-    #[error("NodeInfo create error: `{0}`")]
-    NodeInfoCreateError(#[from] NodeInfoCreateError),
+    Io(#[from] std::io::Error),
+    #[error("Recipient create error: `{0}`")]
+    RecipientCreate(#[from] RecipientCreateError),
 }
