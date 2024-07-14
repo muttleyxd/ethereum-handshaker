@@ -1,10 +1,8 @@
-use std::fmt::Formatter;
 
 use futures::sink::SinkExt;
 use thiserror::Error;
 use tokio::net::TcpStream;
 use tokio_stream::StreamExt;
-use tokio_util::codec::LinesCodec;
 
 use crate::{
     keypair::Keypair,
@@ -15,7 +13,7 @@ use crate::{
             codec::HandshakeCodec,
             messages::{Message, MessageType},
         },
-        NodeInfo, RlpxError,
+        NodeInfo,
     },
 };
 

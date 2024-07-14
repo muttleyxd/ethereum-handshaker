@@ -2,7 +2,6 @@ use thiserror::Error;
 use tokio_util::codec::LinesCodecError;
 
 use crate::{
-    keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
     transport_protocol::{
         rlpx::{ecies::EciesError, handshake::HandshakeError},

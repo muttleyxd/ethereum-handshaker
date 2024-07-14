@@ -1,18 +1,12 @@
 // todo: zeroize all secret and public key fields when dropping them
 
-use std::{
-    net::{AddrParseError, Ipv4Addr, SocketAddr},
-    process::ExitCode,
-    str::FromStr,
-};
 
-use thiserror::Error;
 
 use crate::{
     error::EthereumHandshakerError,
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::{NodeInfo, Rlpx},
+    transport_protocol::rlpx::{Rlpx},
 };
 
 mod dto;

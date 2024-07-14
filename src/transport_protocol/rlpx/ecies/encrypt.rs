@@ -1,20 +1,13 @@
-use std::{
-    error::Error,
-    io::{BufRead, Read},
-};
 
 use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
 };
-use alloy_primitives::{bytes::Buf, B128, B256, B512};
+use alloy_primitives::{B128};
 use ctr::Ctr64BE;
 use secp256k1::{
-    constants::UNCOMPRESSED_PUBLIC_KEY_SIZE,
-    ecdh::SharedSecret,
-    hashes::{sha256, Hash, HashEngine, Hmac, HmacEngine},
-    rand::{self, random, rngs::OsRng},
-    PublicKey, SecretKey,
+    rand::{random},
+    PublicKey,
 };
 use sha2::Digest;
 

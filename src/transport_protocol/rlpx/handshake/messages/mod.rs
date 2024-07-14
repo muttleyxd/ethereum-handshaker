@@ -5,9 +5,7 @@ use std::fmt::Formatter;
 
 pub use auth::AuthRlp;
 pub use auth_ack::AuthAck;
-use tokio_util::bytes::BytesMut;
 
-use crate::transport_protocol::rlpx::handshake::HandshakeError;
 
 #[derive(Debug)]
 pub enum Message {

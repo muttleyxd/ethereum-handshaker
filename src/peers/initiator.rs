@@ -1,5 +1,5 @@
-use alloy_primitives::{B128, B256};
-use secp256k1::{rand::random, SecretKey};
+use alloy_primitives::{B256};
+use secp256k1::{rand::random};
 
 use crate::keypair::Keypair;
 

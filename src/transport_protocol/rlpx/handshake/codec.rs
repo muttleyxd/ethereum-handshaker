@@ -1,11 +1,6 @@
-use std::str::FromStr;
 
 use alloy_primitives::bytes::BytesMut;
-use alloy_rlp::{Buf, Decodable};
-use secp256k1::{
-    rand,
-    rand::{rngs::OsRng, Rng},
-};
+use alloy_rlp::{Decodable};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{
