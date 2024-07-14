@@ -1,4 +1,3 @@
-
 use futures::sink::SinkExt;
 use thiserror::Error;
 use tokio::net::TcpStream;

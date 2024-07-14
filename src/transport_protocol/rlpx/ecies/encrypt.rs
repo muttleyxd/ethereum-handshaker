@@ -2,12 +2,9 @@ use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
 };
-use alloy_primitives::{B128};
+use alloy_primitives::B128;
 use ctr::Ctr64BE;
-use secp256k1::{
-    rand::{random},
-    PublicKey,
-};
+use secp256k1::{rand::random, PublicKey};
 
 use crate::{
     keypair::Keypair,

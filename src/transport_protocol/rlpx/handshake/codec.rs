@@ -1,6 +1,5 @@
-
 use alloy_primitives::bytes::BytesMut;
-use alloy_rlp::{Decodable};
+use alloy_rlp::Decodable;
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{

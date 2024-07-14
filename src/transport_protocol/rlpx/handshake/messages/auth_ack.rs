@@ -1,7 +1,5 @@
-use alloy_primitives::{
-    B256, B512,
-};
-use alloy_rlp::{RlpDecodable};
+use alloy_primitives::{B256, B512};
+use alloy_rlp::RlpDecodable;
 
 #[derive(Debug, RlpDecodable)]
 pub struct AuthAck {

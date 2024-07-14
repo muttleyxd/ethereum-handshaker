@@ -4,9 +4,7 @@ use aes::{
 };
 use alloy_primitives::{B128, B256};
 use ctr::Ctr64BE;
-use secp256k1::{
-    constants::UNCOMPRESSED_PUBLIC_KEY_SIZE, PublicKey, SecretKey,
-};
+use secp256k1::{constants::UNCOMPRESSED_PUBLIC_KEY_SIZE, PublicKey, SecretKey};
 
 use crate::transport_protocol::rlpx::ecies::{
     common::{

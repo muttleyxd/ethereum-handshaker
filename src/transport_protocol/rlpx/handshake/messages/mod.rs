@@ -6,7 +6,6 @@ use std::fmt::Formatter;
 pub use auth::AuthRlp;
 pub use auth_ack::AuthAck;
 
-
 #[derive(Debug)]
 pub enum Message {
     Auth,

@@ -2,9 +2,7 @@ use thiserror::Error;
 
 use crate::{
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::{
-        rlpx::{handshake::HandshakeError},
-    },
+    transport_protocol::rlpx::handshake::HandshakeError,
 };
 
 mod ecies;

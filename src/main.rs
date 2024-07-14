@@ -4,7 +4,7 @@ use crate::{
     error::EthereumHandshakerError,
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::{Rlpx},
+    transport_protocol::rlpx::Rlpx,
 };
 
 mod error;

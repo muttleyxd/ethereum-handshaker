@@ -1,4 +1,4 @@
-use secp256k1::{rand::rngs::OsRng, PublicKey, SecretKey, SECP256K1};
+use secp256k1::SecretKey;
 
 use crate::{
     keypair::Keypair,

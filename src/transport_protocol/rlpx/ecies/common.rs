@@ -5,7 +5,7 @@ use secp256k1::{
     hashes::{sha256, Hash, HashEngine, Hmac, HmacEngine},
     PublicKey, SecretKey,
 };
-use sha2::{Digest};
+use sha2::Digest;
 
 use crate::transport_protocol::rlpx::ecies::EciesError;
 

@@ -1,8 +1,6 @@
 use std::ops::BitXor;
 
-use alloy_primitives::{
-    bytes::{BytesMut}, B256, B512,
-};
+use alloy_primitives::{bytes::BytesMut, B256, B512};
 use alloy_rlp::{Encodable, RlpEncodable};
 use secp256k1::{ecdh::SharedSecret, SECP256K1};
 
