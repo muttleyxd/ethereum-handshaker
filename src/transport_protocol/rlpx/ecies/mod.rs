@@ -25,6 +25,6 @@ pub enum EciesError {
     ConcatKdf(String), // concat_kdf doesn't implement std::error::Error
     #[error("Aes stream cipher error: `{0}`")]
     AesStreamCipher(String), // same here
-    #[error("Secp256k1 public key deserialize error: `{0}`")]
-    Secp256k1PublicKeyDeserialize(#[from] secp256k1::Error),
+    #[error("Secp256k1 error: `{0}`")]
+    Secp256k1(#[from] secp256k1::Error),
 }

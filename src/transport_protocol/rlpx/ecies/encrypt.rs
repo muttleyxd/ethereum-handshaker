@@ -13,8 +13,7 @@ use secp256k1::{
     constants::UNCOMPRESSED_PUBLIC_KEY_SIZE,
     ecdh::SharedSecret,
     hashes::{sha256, Hash, HashEngine, Hmac, HmacEngine},
-    rand,
-    rand::{random, rngs::OsRng},
+    rand::{self, random, rngs::OsRng},
     PublicKey, SecretKey,
 };
 use sha2::Digest;
@@ -23,7 +22,8 @@ use crate::{
     keypair::Keypair,
     transport_protocol::rlpx::ecies::{
         common::{
-            calculate_signature, derive_keys_from_secret, I16_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD,
+            calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
+            MESSAGE_SIZE_WITHOUT_PAYLOAD,
         },
         EciesError,
     },
@@ -31,7 +31,7 @@ use crate::{
 
 pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u8>, EciesError> {
     let temporary_keypair = Keypair::generate_keypair();
-    let shared_secret = SharedSecret::new(recipient_public_key, &temporary_keypair.secret_key);
+    let shared_secret = create_shared_secret(&temporary_keypair.secret_key, recipient_public_key)?;
 
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
@@ -46,16 +46,17 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
         .try_apply_keystream(encrypted_payload.as_mut_slice())
         .map_err(|e| EciesError::AesStreamCipher(e.to_string()))?;
 
+    let encrypted_message_size = MESSAGE_SIZE_WITHOUT_PAYLOAD + payload.len();
+
     let payload_signature = calculate_signature(
         &authentication_key,
         &initialization_vector,
         &encrypted_payload,
+        encrypted_message_size,
     );
 
-    let mut result: Vec<u8> = vec![];
-
-    let encrypted_message_size = MESSAGE_SIZE_WITHOUT_PAYLOAD + payload.len();
-    result.reserve_exact(encrypted_message_size + I16_SIZE);
+    // todo: to function compose_message
+    let mut result: Vec<u8> = Vec::with_capacity(encrypted_message_size + I16_SIZE);
 
     let message_size_as_u16 = encrypted_message_size as u16;
     result.extend_from_slice(&message_size_as_u16.to_be_bytes());

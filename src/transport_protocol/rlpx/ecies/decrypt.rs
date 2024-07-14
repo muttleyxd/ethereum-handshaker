@@ -10,28 +10,29 @@ use secp256k1::{
 
 use crate::transport_protocol::rlpx::ecies::{
     common::{
-        calculate_signature, derive_keys_from_secret, I16_SIZE, INITIALIZATION_VECTOR_SIZE,
-        MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,
+        calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
+        INITIALIZATION_VECTOR_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,
     },
     EciesError,
 };
 
 pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, EciesError> {
     let DecomposedMessage {
+        message_length,
         public_key,
         initialization_vector,
         encrypted_payload,
         payload_signature,
-        ..
     } = decompose_message(message)?;
 
-    let shared_secret = SharedSecret::new(&public_key, secret_key);
+    let shared_secret = create_shared_secret(secret_key, &public_key)?;
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
     let signature = calculate_signature(
         &authentication_key,
         &initialization_vector,
         &encrypted_payload,
+        message_length,
     );
     if signature != payload_signature {
         return Err(EciesError::PayloadSignatureMismatch);
