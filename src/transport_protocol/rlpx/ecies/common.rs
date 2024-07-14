@@ -1,0 +1,50 @@
+use alloy_primitives::{B128, B256};
+use secp256k1::{
+    constants::UNCOMPRESSED_PUBLIC_KEY_SIZE,
+    ecdh::SharedSecret,
+    hashes::{sha256, Hash, HashEngine, Hmac, HmacEngine},
+};
+use sha2::Digest;
+
+use crate::transport_protocol::rlpx::ecies::EciesError;
+
+pub const I16_SIZE: usize = (i16::BITS / 8) as usize;
+pub const INITIALIZATION_VECTOR_SIZE: usize = 16;
+pub const PAYLOAD_SIGNATURE_SIZE: usize = 32;
+pub const MESSAGE_SIZE_WITHOUT_PAYLOAD: usize =
+    UNCOMPRESSED_PUBLIC_KEY_SIZE + INITIALIZATION_VECTOR_SIZE + PAYLOAD_SIGNATURE_SIZE;
+
+pub fn derive_keys_from_secret(shared_secret: &SharedSecret) -> Result<(B128, B256), EciesError> {
+    let mut concatenated = B256::default();
+    concat_kdf::derive_key_into::<sha2::Sha256>(
+        &shared_secret.secret_bytes(),
+        &[],
+        concatenated.as_mut_slice(),
+    )
+    .map_err(|e| EciesError::ConcatKdf(e.to_string()))?;
+
+    let (encryption_key, authentication_digest) = split_b256_into_b128(concatenated);
+
+    let authentication_key = B256::from_slice(&sha2::Sha256::digest(authentication_digest));
+
+    Ok((encryption_key, authentication_key))
+}
+
+pub fn calculate_signature(
+    authentication_key: &B256,
+    initialization_vector: &B128,
+    payload: &[u8],
+) -> B256 {
+    let mut hmac_engine = HmacEngine::new(authentication_key.as_ref());
+    hmac_engine.input(initialization_vector.as_slice());
+    hmac_engine.input(payload);
+    let hash = Hmac::<sha256::Hash>::from_engine(hmac_engine);
+    B256::from_slice(hash.as_byte_array())
+}
+
+fn split_b256_into_b128(bytes: B256) -> (B128, B128) {
+    (
+        B128::from_slice(&bytes[0..16]),
+        B128::from_slice(&bytes[16..32]),
+    )
+}

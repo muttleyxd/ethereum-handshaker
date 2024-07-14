@@ -14,7 +14,6 @@ use crate::{
     error::EthereumHandshakerError, keypair::Keypair, peers::recipient::Recipient,
     transport_protocol::rlpx::Rlpx,
 };
-// todo: remove this
 
 pub mod dto;
 pub mod error;
