@@ -54,8 +54,6 @@ pub async fn handshake<'a>(
 pub enum HandshakeError {
     #[error("Invalid message received, expected: `{0}`, actual: `{1}`")]
     InvalidMessageReceived(MessageType, Message),
-    #[error("Message too short")]
-    MessageTooShort,
     #[error("Stream closed unexpectedly")]
     StreamClosedUnexpectedly,
     #[error("Unsupported operation")]

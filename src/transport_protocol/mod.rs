@@ -1,6 +1,3 @@
-use async_trait::async_trait;
+// todo: see if this interface will be needed
 
 pub mod rlpx;
-
-#[async_trait]
-pub trait TransportProtocol {}

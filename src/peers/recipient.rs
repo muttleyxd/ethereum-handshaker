@@ -16,8 +16,6 @@ pub struct Recipient {
 pub enum RecipientCreateError {
     #[error("Failed to find enode prefix")]
     FailedToFindEnodePrefix,
-    #[error("Incorrect peer node id length, expected 64 bytes")]
-    IncorrectPeerNodeIdLength,
     #[error("Missing peer id and address delimiter `@`")]
     MissingPeerIdAndAddressDelimiter,
 

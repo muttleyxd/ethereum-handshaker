@@ -15,7 +15,6 @@ pub enum Message {
 
 #[derive(Debug)]
 pub enum MessageType {
-    Auth,
     AuthAck,
 }
 
@@ -31,7 +30,6 @@ impl std::fmt::Display for Message {
 impl std::fmt::Display for MessageType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MessageType::Auth => f.write_str("MessageType::Auth"),
             MessageType::AuthAck => f.write_str("MessageType::AuthAck"),
         }
     }

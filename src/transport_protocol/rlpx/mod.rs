@@ -1,11 +1,9 @@
 use thiserror::Error;
-use tokio_util::codec::LinesCodecError;
 
 use crate::{
     peers::{initiator::Initiator, recipient::Recipient},
     transport_protocol::{
-        rlpx::{ecies::EciesError, handshake::HandshakeError},
-        TransportProtocol,
+        rlpx::{handshake::HandshakeError},
     },
 };
 
@@ -47,13 +45,7 @@ impl Rlpx {
 
         Ok(node_info)
     }
-
-    pub fn send(&self, message: &[u8]) -> Result<usize, std::io::Error> {
-        self.stream.try_write(message)
-    }
 }
-
-impl TransportProtocol for Rlpx {}
 
 #[derive(Debug, Error)]
 pub enum RlpxError {
@@ -62,12 +54,6 @@ pub enum RlpxError {
 
     #[error("Handshake error: `{0}`")]
     Handshake(#[from] HandshakeError),
-
-    #[error("Lines codec error: `{0}`")]
-    LinesCodec(#[from] LinesCodecError),
-
-    #[error("ECIES error: `{0}`")]
-    Ecies(EciesError),
     #[error("IO error: `{0}`")]
     Io(#[from] std::io::Error),
 }

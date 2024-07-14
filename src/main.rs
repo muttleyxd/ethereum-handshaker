@@ -1,7 +1,5 @@
 // todo: zeroize all secret and public key fields when dropping them
 
-
-
 use crate::{
     error::EthereumHandshakerError,
     keypair::Keypair,
@@ -9,11 +7,9 @@ use crate::{
     transport_protocol::rlpx::{Rlpx},
 };
 
-mod dto;
 mod error;
 mod keypair;
 mod peers;
-mod protocol;
 mod transport_protocol;
 
 #[tokio::main]

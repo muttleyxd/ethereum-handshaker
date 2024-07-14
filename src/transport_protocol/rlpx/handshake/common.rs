@@ -5,6 +5,8 @@ pub fn public_key_to_peer_id(public_key: &PublicKey) -> B512 {
     B512::from_slice(&public_key.serialize_uncompressed()[1..65])
 }
 
+// todo: revisit this
+#[allow(dead_code)]
 pub fn peer_id_to_public_key(peer_id: B512) -> Result<PublicKey, secp256k1::Error> {
     const PUBLIC_KEY_TAG: u8 = 4;
 
@@ -16,7 +18,7 @@ pub fn peer_id_to_public_key(peer_id: B512) -> Result<PublicKey, secp256k1::Erro
 
 #[cfg(test)]
 mod tests {
-    use secp256k1::{rand::rngs::OsRng, PublicKey, SECP256K1};
+    use secp256k1::{rand::rngs::OsRng, SECP256K1};
 
     use crate::transport_protocol::rlpx::handshake::common::{
         peer_id_to_public_key, public_key_to_peer_id,

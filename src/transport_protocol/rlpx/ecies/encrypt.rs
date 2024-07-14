@@ -1,4 +1,3 @@
-
 use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
@@ -9,7 +8,6 @@ use secp256k1::{
     rand::{random},
     PublicKey,
 };
-use sha2::Digest;
 
 use crate::{
     keypair::Keypair,
