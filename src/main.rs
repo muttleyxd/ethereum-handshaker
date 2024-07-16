@@ -11,6 +11,7 @@ use crate::{
 mod keypair;
 mod peers;
 mod rlpx;
+mod types;
 
 #[tokio::main]
 async fn main() -> Result<(), EthereumHandshakerError> {

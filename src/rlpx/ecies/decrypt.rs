@@ -2,16 +2,19 @@ use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
 };
-use alloy_primitives::{B128, B256};
+use alloy_primitives::B256;
 use ctr::Ctr64BE;
 use secp256k1::{constants::UNCOMPRESSED_PUBLIC_KEY_SIZE, PublicKey, SecretKey};
 
-use crate::rlpx::ecies::{
-    common::{
-        calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
-        INITIALIZATION_VECTOR_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,
+use crate::{
+    rlpx::ecies::{
+        common::{
+            calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
+            INITIALIZATION_VECTOR_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,
+        },
+        Error,
     },
-    Error,
+    types::B128Z,
 };
 
 pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error> {
@@ -23,7 +26,7 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error>
         payload_signature,
     } = decompose_message(message)?;
 
-    let shared_secret = create_shared_secret(secret_key, &public_key)?;
+    let mut shared_secret = create_shared_secret(secret_key, &public_key)?;
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
     let signature = calculate_signature(
@@ -44,13 +47,15 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error>
         .try_apply_keystream(encrypted_payload.as_mut_slice())
         .map_err(|e| Error::AesStreamCipher(e.to_string()))?;
 
+    shared_secret.non_secure_erase();
+
     Ok(encrypted_payload)
 }
 
 struct DecomposedMessage {
     pub message_length: usize,
     pub public_key: PublicKey,
-    pub initialization_vector: B128,
+    pub initialization_vector: B128Z,
     pub encrypted_payload: Vec<u8>,
     pub payload_signature: B256,
 }
@@ -81,7 +86,7 @@ fn decompose_message(message: &[u8]) -> Result<DecomposedMessage, Error> {
     let public_key = PublicKey::from_slice(public_key_bytes)?;
 
     let (initialization_vector_bytes, message) = message.split_at(INITIALIZATION_VECTOR_SIZE);
-    let initialization_vector = B128::from_slice(initialization_vector_bytes);
+    let initialization_vector = B128Z::new(initialization_vector_bytes.try_into()?);
 
     let (encrypted_payload_bytes, payload_signature_bytes) =
         message.split_at(message.len() - PAYLOAD_SIGNATURE_SIZE);

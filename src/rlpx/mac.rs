@@ -2,18 +2,18 @@ use aes::{
     cipher::{BlockEncrypt, KeyInit},
     Aes256Enc, Block,
 };
-use alloy_primitives::{Keccak256, B128, B256};
+use alloy_primitives::{Keccak256, B128};
 
-use crate::rlpx::handshake::Error;
+use crate::{rlpx::handshake::Error, types::B256Z};
 
 #[derive(Clone, Debug)]
 pub struct MessageAuthenticationCode {
-    pub secret: B256,
+    pub secret: B256Z,
     pub hasher: Keccak256,
 }
 
 impl MessageAuthenticationCode {
-    pub fn new(secret: B256) -> Self {
+    pub fn new(secret: B256Z) -> Self {
         Self {
             secret,
             hasher: Keccak256::new(),
@@ -41,7 +41,7 @@ impl MessageAuthenticationCode {
     }
 
     fn update_data(&mut self, digest: B128) -> Result<(), Error> {
-        let aes = Aes256Enc::new_from_slice(&self.secret.0)?;
+        let aes = Aes256Enc::new_from_slice(self.secret.0.as_slice())?;
 
         let mut encrypted_digest = self.current_digest();
         aes.encrypt_block(Block::from_mut_slice(encrypted_digest.0.as_mut()));
@@ -55,9 +55,9 @@ impl MessageAuthenticationCode {
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{B128, B256};
+    use alloy_primitives::{B128};
 
-    use crate::rlpx::mac::MessageAuthenticationCode;
+    use crate::{rlpx::mac::MessageAuthenticationCode, types::B256Z};
 
     const INITIAL_DIGEST: B128 = B128::new([
         197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192,
@@ -65,7 +65,7 @@ mod tests {
 
     #[test]
     fn test_update_header() {
-        let mut mac = MessageAuthenticationCode::new(B256::default());
+        let mut mac = MessageAuthenticationCode::new(B256Z::default());
 
         let initial_digest = mac.current_digest();
         assert_eq!(initial_digest, INITIAL_DIGEST);
@@ -82,7 +82,7 @@ mod tests {
 
     #[test]
     fn test_update_data() {
-        let mut mac = MessageAuthenticationCode::new(B256::default());
+        let mut mac = MessageAuthenticationCode::new(B256Z::default());
 
         let initial_digest = mac.current_digest();
         assert_eq!(initial_digest, INITIAL_DIGEST);

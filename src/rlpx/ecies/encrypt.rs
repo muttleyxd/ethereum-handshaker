@@ -2,7 +2,7 @@ use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
 };
-use alloy_primitives::{B128, B256};
+use alloy_primitives::B256;
 use ctr::Ctr64BE;
 use secp256k1::{rand::random, PublicKey};
 
@@ -15,6 +15,7 @@ use crate::{
         },
         Error,
     },
+    types::B128Z,
 };
 
 pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u8>, Error> {
@@ -23,7 +24,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
 
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
-    let initialization_vector: B128 = random::<[u8; 16]>().into();
+    let initialization_vector: B128Z = B128Z::new(random::<[u8; 16]>());
 
     let mut encryptor = Ctr64BE::<Aes128>::new(
         encryption_key.0.as_ref().into(),
@@ -64,7 +65,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
 fn compose_message(
     encrypted_message_size: usize,
     temporary_public_key: &PublicKey,
-    initialization_vector: B128,
+    initialization_vector: B128Z,
     encrypted_payload: Vec<u8>,
     payload_signature: B256,
 ) -> Vec<u8> {
@@ -73,7 +74,7 @@ fn compose_message(
     let message_size_as_u16 = encrypted_message_size as u16;
     result.extend_from_slice(&message_size_as_u16.to_be_bytes());
     result.extend(temporary_public_key.serialize_uncompressed());
-    result.extend(initialization_vector);
+    result.extend(initialization_vector.0.as_slice());
     result.extend(encrypted_payload);
     result.extend(payload_signature);
 

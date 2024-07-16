@@ -4,12 +4,12 @@ version = "0.1.0"
 edition = "2021"
 
 [dependencies]
-aes = { version = "0.8" }
+aes = { version = "0.8", features = ["zeroize"] }
 alloy-primitives = { version = "0.7", features = ["rlp"] }
 alloy-rlp = { version = "0.3", features = ["derive"] }
 async-trait = { version = "0.1" }
 concat-kdf = { version = "0.1" }
-ctr = { version = "0.9" }
+ctr = { version = "0.9", features = ["zeroize"] }
 futures = { version = "0.3" }
 secp256k1 = { version = "0.29", features = ["global-context", "hashes-std", "rand-std", "recovery"] }
 sha2 = { version = "0.10" } # this could be removed if I would implement concat-kdf traits for alloy sha256
@@ -17,3 +17,4 @@ thiserror = { version = "1.0" }
 tokio = { version = "1.38", features = ["net", "rt", "rt-multi-thread", "macros"] }
 tokio-stream = { version = "0.1" }
 tokio-util = { version = "0.7", features = ["codec"] }
+zeroize = { version = "1.7" , features = ["derive"]}

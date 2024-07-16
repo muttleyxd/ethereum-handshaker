@@ -2,7 +2,7 @@ use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes256,
 };
-use alloy_primitives::{bytes::BytesMut, Keccak256, B128, B256};
+use alloy_primitives::{bytes::BytesMut, Keccak256, B128};
 use alloy_rlp::{Decodable, Encodable};
 use ctr::Ctr64BE;
 use tokio_util::codec::{Decoder, Encoder};
@@ -22,6 +22,7 @@ use crate::{
         },
         mac::MessageAuthenticationCode,
     },
+    types::B256Z,
 };
 
 pub mod messages;
@@ -61,25 +62,29 @@ impl FramedCodec {
          * todo: if we were ever to become a recipient of this transaction,
          *       then we would have to hash the nonce in reverse order
          */
-        let hashed_nonces = keccak256_hash(&[auth_ack.recipient_nonce, initiator.nonce]);
+        let hashed_nonces = keccak256_hash(&[
+            auth_ack.recipient_nonce.0.as_slice(),
+            initiator.nonce.0.as_slice(),
+        ]);
 
         let shared_secret =
-            keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), hashed_nonces.0]);
-        let aes_secret = keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), shared_secret.0]);
+            keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *hashed_nonces.0]);
+        let aes_secret =
+            keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *shared_secret.0]);
 
         let aes_initialization_vector = B128::default();
         let ingress_aes =
-            Ctr64BE::<Aes256>::new(&aes_secret.0.into(), &aes_initialization_vector.0.into());
+            Ctr64BE::<Aes256>::new(&(*aes_secret.0).into(), &aes_initialization_vector.0.into());
         let egress_aes = ingress_aes.clone();
 
-        let mac_secret = keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), aes_secret.0]);
+        let mac_secret = keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *aes_secret.0]);
 
-        let mut ingress_mac = MessageAuthenticationCode::new(mac_secret);
-        ingress_mac.update(mac_secret.bit_xor(initiator.nonce));
+        let mut ingress_mac = MessageAuthenticationCode::new(mac_secret.clone());
+        ingress_mac.update(mac_secret.bitxor(initiator.nonce.0.as_slice()));
         ingress_mac.update(incoming_message);
 
-        let mut egress_mac = MessageAuthenticationCode::new(mac_secret);
-        egress_mac.update(mac_secret.bit_xor(auth_ack.recipient_nonce));
+        let mut egress_mac = MessageAuthenticationCode::new(mac_secret.clone());
+        egress_mac.update(mac_secret.bitxor(auth_ack.recipient_nonce.0.as_slice()));
         egress_mac.update(outgoing_message);
 
         Ok(Self {
@@ -207,10 +212,10 @@ impl Decoder for FramedCodec {
     }
 }
 
-fn keccak256_hash(elements: &[impl AsRef<[u8]>]) -> B256 {
+fn keccak256_hash(elements: &[impl AsRef<[u8]>]) -> B256Z {
     let mut hasher = Keccak256::new();
     elements.iter().for_each(|element| hasher.update(element));
-    hasher.finalize()
+    B256Z::new(hasher.finalize().into())
 }
 
 fn usize_to_u24_be(value: usize) -> Result<[u8; 3], Error> {

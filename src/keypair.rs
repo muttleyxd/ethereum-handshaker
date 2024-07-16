@@ -6,6 +6,12 @@ pub struct Keypair {
     pub secret_key: SecretKey,
 }
 
+impl Drop for Keypair {
+    fn drop(&mut self) {
+        self.secret_key.non_secure_erase();
+    }
+}
+
 impl Keypair {
     pub fn generate_keypair() -> Self {
         let (secret_key, public_key) = SECP256K1.generate_keypair(&mut OsRng);

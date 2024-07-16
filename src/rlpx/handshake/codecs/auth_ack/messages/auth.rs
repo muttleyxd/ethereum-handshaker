@@ -1,4 +1,4 @@
-use alloy_primitives::{bytes::BytesMut, B256, B512};
+use alloy_primitives::{bytes::BytesMut, B512};
 use alloy_rlp::{Encodable, RlpEncodable};
 use secp256k1::SECP256K1;
 
@@ -6,6 +6,7 @@ use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
     rlpx::{ecies::common::create_shared_secret, handshake::common::public_key_to_peer_id},
+    types::B256Z,
 };
 
 type SignatureWithRecoveryId = [u8; 65];
@@ -14,7 +15,7 @@ type SignatureWithRecoveryId = [u8; 65];
 pub struct AuthRlp {
     pub signature: SignatureWithRecoveryId,
     pub initiator_peer_id: B512,
-    pub initiator_nonce: B256,
+    pub initiator_nonce: B256Z,
     pub auth_version: usize,
 }
 
@@ -26,15 +27,13 @@ impl AuthRlp {
         initiator_ephemeral_key: &Keypair,
         recipient: &Recipient,
     ) -> Result<BytesMut, secp256k1::Error> {
-        let static_shared_secret =
+        let mut static_shared_secret =
             create_shared_secret(&initiator.keypair.secret_key, &recipient.public_key)?;
-        let message = initiator
-            .nonce
-            .bit_xor(static_shared_secret.secret_bytes().into());
+        let message = initiator.nonce.bitxor(&static_shared_secret.secret_bytes());
 
         let (public_key_recovery_id, signature_bytes) = SECP256K1
             .sign_ecdsa_recoverable(
-                &secp256k1::Message::from_digest(message.0),
+                &secp256k1::Message::from_digest(*message.0),
                 &initiator_ephemeral_key.secret_key,
             )
             .serialize_compact();
@@ -49,10 +48,12 @@ impl AuthRlp {
         let auth_rlp = Self {
             signature,
             initiator_peer_id,
-            initiator_nonce: initiator.nonce,
+            initiator_nonce: initiator.nonce.clone(),
             auth_version: AUTH_VERSION,
         };
         auth_rlp.encode(&mut buf);
+
+        static_shared_secret.non_secure_erase();
 
         Ok(buf)
     }

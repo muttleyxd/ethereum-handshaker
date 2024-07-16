@@ -27,4 +27,6 @@ pub enum Error {
     AesStreamCipher(String), // same here
     #[error("Secp256k1 error: `{0}`")]
     Secp256k1(#[from] secp256k1::Error),
+    #[error("TryFromSlice error: `{0}`")]
+    TryFromSlice(#[from] std::array::TryFromSliceError),
 }
