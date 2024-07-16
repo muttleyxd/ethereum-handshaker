@@ -1,13 +1,13 @@
 // todo: zeroize all secret and public key fields when dropping them
 
+use thiserror::Error;
+
 use crate::{
-    error::EthereumHandshakerError,
     keypair::Keypair,
-    peers::{initiator::Initiator, recipient::Recipient},
+    peers::{initiator::Initiator, recipient, recipient::Recipient},
     rlpx::Rlpx,
 };
 
-mod error;
 mod keypair;
 mod peers;
 mod rlpx;
@@ -28,16 +28,24 @@ async fn main() -> Result<(), EthereumHandshakerError> {
             Ok(())
         }
         Err(error) => {
-            eprintln!("Error during handshake: {}", error);
-
-            // todo: work out how to not print this
+            eprintln!("Error during handshake: {error}");
             Err(error.into())
         }
     }
 }
 
+#[derive(Debug, Error)]
+pub enum EthereumHandshakerError {
+    #[error("IO error: `{0}`")]
+    Io(#[from] std::io::Error),
+    #[error("Recipient create error: `{0}`")]
+    RecipientCreate(#[from] recipient::Error),
+    #[error("RLPx transport protocol error: `{0}`")]
+    Rlpx(#[from] rlpx::Error),
+}
+
 fn get_keypair() -> Result<Keypair, std::io::Error> {
-    const SECRET_KEY_PATH: &str = "/tmp/handshaker_secret_key";
+    const SECRET_KEY_PATH: &str = "handshaker_secret_key";
     if let Ok(secret_bytes) = std::fs::read(SECRET_KEY_PATH) {
         let bytes: Result<[u8; 32], _> = secret_bytes.try_into();
         if let Ok(value) = bytes {

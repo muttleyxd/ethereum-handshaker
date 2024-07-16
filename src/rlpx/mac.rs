@@ -4,7 +4,7 @@ use aes::{
 };
 use alloy_primitives::{Keccak256, B128, B256};
 
-use crate::rlpx::handshake::HandshakeError;
+use crate::rlpx::handshake::Error;
 
 #[derive(Clone, Debug)]
 pub struct MessageAuthenticationCode {
@@ -21,26 +21,26 @@ impl MessageAuthenticationCode {
     }
 
     pub fn current_digest(&self) -> B128 {
-        B128::from_slice(&self.hasher.to_owned().finalize()[0..16])
+        B128::from_slice(&self.hasher.clone().finalize()[0..16])
     }
 
     pub fn update(&mut self, bytes: impl AsRef<[u8]>) {
-        self.hasher.update(bytes)
+        self.hasher.update(bytes);
     }
 
-    pub fn update_header(&mut self, header: &[u8]) -> Result<(), HandshakeError> {
+    pub fn update_header(&mut self, header: &[u8]) -> Result<(), Error> {
         if header.len() != B128::len_bytes() {
-            return Err(HandshakeError::InvalidHeaderLengthForMac);
+            return Err(Error::InvalidHeaderLengthForMac);
         }
         self.update_data(B128::from_slice(header))
     }
 
-    pub fn update_frame_data(&mut self, data: &[u8]) -> Result<(), HandshakeError> {
+    pub fn update_frame_data(&mut self, data: &[u8]) -> Result<(), Error> {
         self.hasher.update(data);
         self.update_data(self.current_digest())
     }
 
-    fn update_data(&mut self, digest: B128) -> Result<(), HandshakeError> {
+    fn update_data(&mut self, digest: B128) -> Result<(), Error> {
         let aes = Aes256Enc::new_from_slice(&self.secret.0)?;
 
         let mut encrypted_digest = self.current_digest();

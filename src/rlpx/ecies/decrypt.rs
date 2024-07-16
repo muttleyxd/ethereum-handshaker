@@ -11,15 +11,15 @@ use crate::rlpx::ecies::{
         calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
         INITIALIZATION_VECTOR_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,
     },
-    EciesError,
+    Error,
 };
 
-pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, EciesError> {
+pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error> {
     let DecomposedMessage {
         message_length,
         public_key,
         initialization_vector,
-        encrypted_payload,
+        mut encrypted_payload,
         payload_signature,
     } = decompose_message(message)?;
 
@@ -33,19 +33,18 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, EciesE
         message_length,
     );
     if signature != payload_signature {
-        return Err(EciesError::PayloadSignatureMismatch);
+        return Err(Error::PayloadSignatureMismatch);
     }
 
     let mut decryptor = Ctr64BE::<Aes128>::new(
         encryption_key.0.as_ref().into(),
         initialization_vector.0.as_ref().into(),
     );
-    let mut decrypted_payload = encrypted_payload.to_vec();
     decryptor
-        .try_apply_keystream(decrypted_payload.as_mut_slice())
-        .map_err(|e| EciesError::AesStreamCipher(e.to_string()))?;
+        .try_apply_keystream(encrypted_payload.as_mut_slice())
+        .map_err(|e| Error::AesStreamCipher(e.to_string()))?;
 
-    Ok(decrypted_payload)
+    Ok(encrypted_payload)
 }
 
 struct DecomposedMessage {
@@ -56,10 +55,10 @@ struct DecomposedMessage {
     pub payload_signature: B256,
 }
 
-fn decompose_message(message: &[u8]) -> Result<DecomposedMessage, EciesError> {
+fn decompose_message(message: &[u8]) -> Result<DecomposedMessage, Error> {
     const MINIMAL_MESSSAGE_LENGTH: usize = MESSAGE_SIZE_WITHOUT_PAYLOAD + 1;
     if message.len() < MINIMAL_MESSSAGE_LENGTH {
-        return Err(EciesError::ReceivedMessageIsTooSmall(
+        return Err(Error::ReceivedMessageIsTooSmall(
             MINIMAL_MESSSAGE_LENGTH,
             message.len(),
         ));
@@ -72,7 +71,7 @@ fn decompose_message(message: &[u8]) -> Result<DecomposedMessage, EciesError> {
     let message_length =
         i16::from_be_bytes([message_length_bytes[0], message_length_bytes[1]]) as usize;
     if message_length != expected_message_length {
-        return Err(EciesError::ReceivedMessagePayloadLengthMismatch(
+        return Err(Error::ReceivedMessagePayloadLengthMismatch(
             message_length,
             expected_message_length,
         ));

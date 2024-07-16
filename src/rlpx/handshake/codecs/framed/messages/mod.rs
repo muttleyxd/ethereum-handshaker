@@ -12,7 +12,7 @@ pub enum Message {
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Message::Hello(content) => write!(f, "Message::Hello: {content:#?}"),
+            Self::Hello(content) => write!(f, "Message::Hello: {content:#?}"),
         }
     }
 }

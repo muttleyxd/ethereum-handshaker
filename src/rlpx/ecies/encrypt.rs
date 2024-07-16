@@ -13,11 +13,11 @@ use crate::{
             calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
             MESSAGE_SIZE_WITHOUT_PAYLOAD,
         },
-        EciesError,
+        Error,
     },
 };
 
-pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u8>, EciesError> {
+pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u8>, Error> {
     let temporary_keypair = Keypair::generate_keypair();
     let shared_secret = create_shared_secret(&temporary_keypair.secret_key, recipient_public_key)?;
 
@@ -32,7 +32,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
     let mut encrypted_payload = payload.to_vec();
     encryptor
         .try_apply_keystream(encrypted_payload.as_mut_slice())
-        .map_err(|e| EciesError::AesStreamCipher(e.to_string()))?;
+        .map_err(|e| Error::AesStreamCipher(e.to_string()))?;
 
     let encrypted_message_size = MESSAGE_SIZE_WITHOUT_PAYLOAD + payload.len();
 
@@ -52,7 +52,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
     );
 
     if message.len() != encrypted_message_size + I16_SIZE {
-        return Err(EciesError::InvalidEncryptedMesssageLength(
+        return Err(Error::InvalidEncryptedMesssageLength(
             encrypted_message_size,
             message.len(),
         ));

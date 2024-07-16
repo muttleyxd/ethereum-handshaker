@@ -1,10 +1,7 @@
 use alloy_primitives::B512;
 use thiserror::Error;
 
-use crate::{
-    peers::{initiator::Initiator, recipient::Recipient},
-    rlpx::handshake::HandshakeError,
-};
+use crate::peers::{initiator::Initiator, recipient::Recipient};
 
 mod ecies;
 mod handshake;
@@ -36,7 +33,7 @@ pub struct NodeCapability {
 }
 
 impl Rlpx {
-    pub async fn new(initiator: Initiator, recipient: Recipient) -> Result<Self, RlpxError> {
+    pub async fn new(initiator: Initiator, recipient: Recipient) -> Result<Self, Error> {
         let stream = tokio::net::TcpStream::connect(recipient.address).await?;
 
         Ok(Self {
@@ -47,9 +44,9 @@ impl Rlpx {
         })
     }
 
-    pub async fn handshake(&mut self) -> Result<NodeInfo, RlpxError> {
+    pub async fn handshake(&mut self) -> Result<NodeInfo, Error> {
         if self.handshake_completed {
-            return Err(RlpxError::HandshakeAlreadyCompleted);
+            return Err(Error::HandshakeAlreadyCompleted);
         }
 
         let recipient_hello =
@@ -73,12 +70,12 @@ impl Rlpx {
 }
 
 #[derive(Debug, Error)]
-pub enum RlpxError {
+pub enum Error {
     #[error("Handshake has already been completed")]
     HandshakeAlreadyCompleted,
 
     #[error("Handshake error: `{0}`")]
-    Handshake(#[from] HandshakeError),
+    Handshake(#[from] handshake::Error),
     #[error("IO error: `{0}`")]
     Io(#[from] std::io::Error),
 }

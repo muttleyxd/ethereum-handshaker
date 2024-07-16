@@ -28,7 +28,7 @@ pub async fn handshake<'a>(
     stream: &mut TcpStream,
     initiator: &'a Initiator,
     recipient: &Recipient,
-) -> Result<Hello, HandshakeError> {
+) -> Result<Hello, Error> {
     let initiator_ephemeral_key = Keypair::generate_keypair();
 
     let AuthAckResult {
@@ -40,8 +40,8 @@ pub async fn handshake<'a>(
 
     let framed_codec = FramedCodec::new(
         initiator,
-        initiator_ephemeral_key,
-        auth_ack,
+        &initiator_ephemeral_key,
+        &auth_ack,
         &incoming_message_for_hashing,
         &outgoing_message_for_hashing,
     )?;
@@ -55,7 +55,7 @@ pub async fn handshake<'a>(
     let received_message = framed_stream
         .next()
         .await
-        .ok_or(HandshakeError::StreamClosedUnexpectedly)??;
+        .ok_or(Error::StreamClosedUnexpectedly)??;
 
     match received_message {
         framed::messages::Message::Hello(recipient_hello) => Ok(recipient_hello),
@@ -63,7 +63,7 @@ pub async fn handshake<'a>(
 }
 
 #[derive(Debug, Error)]
-pub enum HandshakeError {
+pub enum Error {
     #[error("Auth-Ack not completed")]
     AuthAckNotCompleted,
     #[error("Invalid message received, expected: `{0}`, actual: `{1}`")]
@@ -94,7 +94,7 @@ pub enum HandshakeError {
     #[error("alloy-rlp error: `{0}`")]
     AlloyRlp(#[from] alloy_rlp::Error),
     #[error("ECIES error: `{0}`")]
-    Ecies(#[from] ecies::EciesError),
+    Ecies(#[from] ecies::Error),
     #[error("IO error: `{0}`")]
     Io(#[from] std::io::Error),
     #[error("Secp256k1 error: `{0}`")]
@@ -113,7 +113,7 @@ async fn auth_ack<'a>(
     initiator: &'a Initiator,
     initiator_ephemeral_key: &Keypair,
     recipient: &Recipient,
-) -> Result<AuthAckResult<'a>, HandshakeError> {
+) -> Result<AuthAckResult<'a>, Error> {
     let auth_ack_codec =
         AuthAckCodec::new(initiator, initiator_ephemeral_key.to_owned(), recipient);
     let mut auth_ack_stream = tokio_util::codec::Framed::new(stream, auth_ack_codec);
@@ -125,7 +125,7 @@ async fn auth_ack<'a>(
     let received = auth_ack_stream
         .next()
         .await
-        .ok_or(HandshakeError::StreamClosedUnexpectedly)??;
+        .ok_or(Error::StreamClosedUnexpectedly)??;
     let auth_ack = get_auth_ack_from_message(received)?;
 
     let FramedParts { io, codec, .. } = auth_ack_stream.into_parts();
@@ -143,10 +143,10 @@ async fn auth_ack<'a>(
 
 fn get_auth_ack_from_message(
     received_message: auth_ack::messages::Message,
-) -> Result<AuthAck, HandshakeError> {
+) -> Result<AuthAck, Error> {
     match received_message {
         auth_ack::messages::Message::AuthAck(value) => Ok(value),
-        _ => Err(HandshakeError::AuthAckInvalidMessageReceived(
+        _ => Err(Error::AuthAckInvalidMessageReceived(
             auth_ack::messages::MessageType::AuthAck,
             received_message,
         )),

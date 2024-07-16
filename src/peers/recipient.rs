@@ -6,14 +6,14 @@ use std::{
 use secp256k1::PublicKey;
 use thiserror::Error;
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, Eq, PartialEq)]
 pub struct Recipient {
     pub address: SocketAddr,
     pub public_key: PublicKey,
 }
 
 #[derive(Debug, Error)]
-pub enum RecipientCreateError {
+pub enum Error {
     #[error("Failed to find enode prefix")]
     FailedToFindEnodePrefix,
     #[error("Missing peer id and address delimiter `@`")]
@@ -26,18 +26,18 @@ pub enum RecipientCreateError {
 }
 
 impl Recipient {
-    pub fn from_enode_str(value: &str) -> Result<Self, RecipientCreateError> {
+    pub fn from_enode_str(value: &str) -> Result<Self, Error> {
         const PREFIX: &str = "enode://";
         const PEER_ID_AND_ADDRESS_DELIMITER: char = '@';
         const SECP256K1_TAG_PUBLIC_KEY: &str = "04";
 
         let peer_id_and_address = value
             .strip_prefix(PREFIX)
-            .ok_or(RecipientCreateError::FailedToFindEnodePrefix)?;
+            .ok_or(Error::FailedToFindEnodePrefix)?;
 
         let (peer_id, address_str) = peer_id_and_address
             .split_once(PEER_ID_AND_ADDRESS_DELIMITER)
-            .ok_or(RecipientCreateError::MissingPeerIdAndAddressDelimiter)?;
+            .ok_or(Error::MissingPeerIdAndAddressDelimiter)?;
 
         let address = SocketAddr::from_str(address_str)?;
 
@@ -82,7 +82,7 @@ mod tests {
         let empty = "";
         assert!(matches!(
             Recipient::from_enode_str(empty),
-            Err(RecipientCreateError::FailedToFindEnodePrefix)
+            Err(Error::FailedToFindEnodePrefix)
         ));
 
         let missing_prefix = "node://d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa410\
@@ -90,7 +90,7 @@ mod tests {
             0303";
         assert!(matches!(
             Recipient::from_enode_str(missing_prefix),
-            Err(RecipientCreateError::FailedToFindEnodePrefix)
+            Err(Error::FailedToFindEnodePrefix)
         ));
 
         let malformed_peer_id = "enode://d860a01f9722d7801619d151aba3f43f943f6f00718d1b9baa410\
@@ -98,14 +98,14 @@ mod tests {
             0303";
         assert!(matches!(
             Recipient::from_enode_str(malformed_peer_id),
-            Err(RecipientCreateError::SecP256k1PublicKeyParseFailure(_))
+            Err(Error::SecP256k1PublicKeyParseFailure(_))
         ));
 
         let missing_address = "enode://d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa4\
             101932a1f5011f16bb2b1bb35db20d6fe28fa0bf09636d26a87d31de9ec6203eeedb1f666";
         assert!(matches!(
             Recipient::from_enode_str(missing_address),
-            Err(RecipientCreateError::MissingPeerIdAndAddressDelimiter)
+            Err(Error::MissingPeerIdAndAddressDelimiter)
         ));
 
         let invalid_ip = "enode://d860a01f9722d78051619d1e2351aba3f43f943f6f00718d1b9baa410193\
@@ -113,7 +113,7 @@ mod tests {
             3";
         assert!(matches!(
             Recipient::from_enode_str(invalid_ip),
-            Err(RecipientCreateError::AddressParseFailure(_))
+            Err(Error::AddressParseFailure(_))
         ));
     }
 }

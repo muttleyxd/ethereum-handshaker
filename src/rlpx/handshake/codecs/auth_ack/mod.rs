@@ -10,7 +10,7 @@ use crate::{
         ecies,
         handshake::{
             codecs::auth_ack::messages::{auth::AuthRlp, auth_ack::AuthAck, Message},
-            HandshakeError,
+            Error,
         },
     },
 };
@@ -42,10 +42,10 @@ impl<'a> AuthAckCodec<'a> {
         }
     }
 
-    pub fn into_messages_for_hashing(self) -> Result<(Vec<u8>, Vec<u8>), HandshakeError> {
+    pub fn into_messages_for_hashing(self) -> Result<(Vec<u8>, Vec<u8>), Error> {
         match (self.incoming_message, self.outgoing_message) {
             (Some(incoming), Some(outgoing)) => Ok((incoming, outgoing)),
-            _ => Err(HandshakeError::AuthAckNotCompleted),
+            _ => Err(Error::AuthAckNotCompleted),
         }
     }
 }
@@ -57,7 +57,7 @@ enum State {
 }
 
 impl Encoder<Message> for AuthAckCodec<'_> {
-    type Error = HandshakeError;
+    type Error = Error;
 
     fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
         match item {
@@ -76,14 +76,14 @@ impl Encoder<Message> for AuthAckCodec<'_> {
                 self.state = State::AuthSent;
                 Ok(())
             }
-            _ => Err(HandshakeError::UnsupportedOperation),
+            _ => Err(Error::UnsupportedOperation),
         }
     }
 }
 
 impl Decoder for AuthAckCodec<'_> {
     type Item = Message;
-    type Error = HandshakeError;
+    type Error = Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         match self.state {
@@ -95,7 +95,7 @@ impl Decoder for AuthAckCodec<'_> {
                 let auth_ack = AuthAck::decode(&mut decrypted.as_slice())?;
                 Ok(Some(Message::AuthAck(auth_ack)))
             }
-            _ => Err(HandshakeError::UnsupportedOperation),
+            _ => Err(Error::UnsupportedOperation),
         }
     }
 }

@@ -11,7 +11,7 @@ pub use decrypt::decrypt;
 pub use encrypt::encrypt;
 
 #[derive(Debug, Error)]
-pub enum EciesError {
+pub enum Error {
     #[error("Invalid encrypted message length, expected: {0}, actual: {1}")]
     InvalidEncryptedMesssageLength(usize, usize),
     #[error("Payload signature mismatch")]

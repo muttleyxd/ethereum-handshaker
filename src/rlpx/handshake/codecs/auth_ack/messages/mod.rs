@@ -19,8 +19,8 @@ pub enum MessageType {
 impl std::fmt::Display for Message {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            Message::Auth => f.write_str("Message::Auth"),
-            Message::AuthAck(content) => write!(f, "Message::AuthAck: {content:#?}"),
+            Self::Auth => f.write_str("Message::Auth"),
+            Self::AuthAck(content) => write!(f, "Message::AuthAck: {content:#?}"),
         }
     }
 }
@@ -28,7 +28,7 @@ impl std::fmt::Display for Message {
 impl std::fmt::Display for MessageType {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self {
-            MessageType::AuthAck => f.write_str("MessageType::AuthAck"),
+            Self::AuthAck => f.write_str("MessageType::AuthAck"),
         }
     }
 }

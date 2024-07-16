@@ -18,7 +18,7 @@ use crate::{
                 framed::messages::{hello::Hello, Message},
             },
             common::peer_id_to_public_key,
-            HandshakeError,
+            Error,
         },
         mac::MessageAuthenticationCode,
     },
@@ -45,11 +45,11 @@ pub struct FramedCodec {
 impl FramedCodec {
     pub fn new(
         initiator: &Initiator,
-        initiator_ephemeral_key: Keypair,
-        auth_ack: AuthAck,
+        initiator_ephemeral_key: &Keypair,
+        auth_ack: &AuthAck,
         incoming_message: &[u8],
         outgoing_message: &[u8],
-    ) -> Result<Self, HandshakeError> {
+    ) -> Result<Self, Error> {
         let recipient_ephemeral_public_key =
             peer_id_to_public_key(auth_ack.recipient_ephemeral_peer_id)?;
         let ephemeral_shared_secret = create_shared_secret(
@@ -70,7 +70,7 @@ impl FramedCodec {
         let aes_initialization_vector = B128::default();
         let ingress_aes =
             Ctr64BE::<Aes256>::new(&aes_secret.0.into(), &aes_initialization_vector.0.into());
-        let egress_aes = ingress_aes.to_owned();
+        let egress_aes = ingress_aes.clone();
 
         let mac_secret = keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), aes_secret.0]);
 
@@ -90,7 +90,7 @@ impl FramedCodec {
         })
     }
 
-    fn message_to_frame(&mut self, message: BytesMut) -> Result<BytesMut, HandshakeError> {
+    fn message_to_frame(&mut self, message: BytesMut) -> Result<BytesMut, Error> {
         let mut result = BytesMut::with_capacity(9999);
 
         result.extend(self.create_header(message.len())?.as_ref());
@@ -99,7 +99,7 @@ impl FramedCodec {
         Ok(result)
     }
 
-    fn create_header(&mut self, message_length: usize) -> Result<BytesMut, HandshakeError> {
+    fn create_header(&mut self, message_length: usize) -> Result<BytesMut, Error> {
         const HEADER_SIGNATURE_BYTES: [u8; 3] = [194, 128, 128];
 
         let mut header_part: [u8; FRAME_HEADER_PART_SIZE] = [0; FRAME_HEADER_PART_SIZE];
@@ -115,7 +115,7 @@ impl FramedCodec {
         Ok(result)
     }
 
-    fn create_frame_data(&mut self, mut message: BytesMut) -> Result<BytesMut, HandshakeError> {
+    fn create_frame_data(&mut self, mut message: BytesMut) -> Result<BytesMut, Error> {
         let target_len = calculate_frame_data_length(message.len());
         message.resize(target_len, 0);
 
@@ -127,15 +127,9 @@ impl FramedCodec {
         Ok(message)
     }
 
-    fn read_header<'b>(
-        &mut self,
-        frame: &'b mut BytesMut,
-    ) -> Result<(&'b mut [u8], usize), HandshakeError> {
+    fn read_header<'a>(&mut self, frame: &'a mut BytesMut) -> Result<(&'a mut [u8], usize), Error> {
         if frame.len() < FRAME_HEADER_SIZE + 1 {
-            return Err(HandshakeError::MessageTooSmall(
-                frame.len(),
-                FRAME_HEADER_SIZE + 1,
-            ));
+            return Err(Error::MessageTooSmall(frame.len(), FRAME_HEADER_SIZE + 1));
         }
         let (header, frame_data) = frame.split_at_mut(FRAME_HEADER_SIZE);
 
@@ -144,7 +138,7 @@ impl FramedCodec {
         self.ingress_mac.update_header(header_part)?;
 
         if self.ingress_mac.current_digest().0 != *recipient_egress_mac {
-            return Err(HandshakeError::HeaderIngressMacCheckFailed);
+            return Err(Error::HeaderIngressMacCheckFailed);
         }
 
         self.ingress_aes.apply_keystream(header_part);
@@ -154,27 +148,24 @@ impl FramedCodec {
         Ok((frame_data, frame_data_length))
     }
 
-    fn read_frame_data<'b>(
+    fn read_frame_data<'a>(
         &mut self,
-        frame_data: &'b mut [u8],
+        frame_data: &'a mut [u8],
         frame_data_length: usize,
-    ) -> Result<(&'b [u8], &'b [u8]), HandshakeError> {
+    ) -> Result<(&'a [u8], &'a [u8]), Error> {
         if frame_data.len() < frame_data_length {
-            return Err(HandshakeError::MessageTooSmall(
-                frame_data.len(),
-                frame_data_length,
-            ));
+            return Err(Error::MessageTooSmall(frame_data.len(), frame_data_length));
         }
 
         let mac_split_index = frame_data
             .len()
             .checked_sub(MAC_SIZE)
-            .ok_or(HandshakeError::MessageTooSmall(frame_data.len(), MAC_SIZE))?;
+            .ok_or(Error::MessageTooSmall(frame_data.len(), MAC_SIZE))?;
         let (frame_part, recipient_egress_mac) = frame_data.split_at_mut(mac_split_index);
 
         self.ingress_mac.update_frame_data(frame_part)?;
         if self.ingress_mac.current_digest().0 != *recipient_egress_mac {
-            return Err(HandshakeError::FrameDataIngressMacCheckFailed);
+            return Err(Error::FrameDataIngressMacCheckFailed);
         }
 
         self.ingress_aes.apply_keystream(frame_part);
@@ -185,7 +176,7 @@ impl FramedCodec {
 }
 
 impl Encoder<Message> for FramedCodec {
-    type Error = HandshakeError;
+    type Error = Error;
 
     fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
         match item {
@@ -202,7 +193,7 @@ impl Encoder<Message> for FramedCodec {
 
 impl Decoder for FramedCodec {
     type Item = Message;
-    type Error = HandshakeError;
+    type Error = Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         let (frame_data, frame_data_length) = self.read_header(src)?;
@@ -211,7 +202,7 @@ impl Decoder for FramedCodec {
 
         match u8::decode(&mut message_id_as_rlp)? {
             HELLO_MESSAGE_ID => Ok(Some(Message::Hello(Hello::decode(&mut message_as_rlp)?))),
-            value => Err(HandshakeError::ReceivedUnknownMessage(value)),
+            value => Err(Error::ReceivedUnknownMessage(value)),
         }
     }
 }
@@ -222,14 +213,14 @@ fn keccak256_hash(elements: &[impl AsRef<[u8]>]) -> B256 {
     hasher.finalize()
 }
 
-fn usize_to_u24_be(value: usize) -> Result<[u8; 3], HandshakeError> {
+fn usize_to_u24_be(value: usize) -> Result<[u8; 3], Error> {
     if value > U24_MAX {
-        return Err(HandshakeError::MessageTooBig(value, U24_MAX));
+        return Err(Error::MessageTooBig(value, U24_MAX));
     }
 
     let be_bytes = value.to_be_bytes();
     if be_bytes.len() < U24_SIZE {
-        return Err(HandshakeError::UsizeToBeBytesReturnedLessThan3Bytes);
+        return Err(Error::UsizeToBeBytesReturnedLessThan3Bytes);
     }
 
     let mut result: [u8; 3] = [0; 3];
@@ -238,9 +229,9 @@ fn usize_to_u24_be(value: usize) -> Result<[u8; 3], HandshakeError> {
     Ok(result)
 }
 
-fn u24_be_to_usize(value: &[u8]) -> Result<usize, HandshakeError> {
+fn u24_be_to_usize(value: &[u8]) -> Result<usize, Error> {
     if value.len() != U24_SIZE {
-        return Err(HandshakeError::U24ShouldBe3BytesLong);
+        return Err(Error::U24ShouldBe3BytesLong);
     }
 
     Ok(usize::from_be_bytes([
@@ -260,7 +251,7 @@ fn calculate_frame_data_length(len: usize) -> usize {
 mod tests {
     use crate::rlpx::handshake::{
         codecs::framed::{calculate_frame_data_length, u24_be_to_usize, usize_to_u24_be, U24_MAX},
-        HandshakeError,
+        Error,
     };
 
     #[test]
@@ -272,7 +263,7 @@ mod tests {
 
         assert!(matches!(
             usize_to_u24_be(U24_MAX + 1),
-            Err(HandshakeError::MessageTooBig(_, _))
+            Err(Error::MessageTooBig(_, _))
         ));
     }
 
@@ -285,7 +276,7 @@ mod tests {
 
         assert!(matches!(
             u24_be_to_usize(&[0]),
-            Err(HandshakeError::U24ShouldBe3BytesLong)
+            Err(Error::U24ShouldBe3BytesLong)
         ));
     }
 

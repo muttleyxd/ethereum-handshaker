@@ -7,7 +7,7 @@ use secp256k1::{
 };
 use sha2::Digest;
 
-use crate::rlpx::ecies::EciesError;
+use crate::rlpx::ecies::Error;
 
 pub const I16_SIZE: usize = (i16::BITS / 8) as usize;
 pub const INITIALIZATION_VECTOR_SIZE: usize = 16;
@@ -15,14 +15,14 @@ pub const PAYLOAD_SIGNATURE_SIZE: usize = 32;
 pub const MESSAGE_SIZE_WITHOUT_PAYLOAD: usize =
     UNCOMPRESSED_PUBLIC_KEY_SIZE + INITIALIZATION_VECTOR_SIZE + PAYLOAD_SIGNATURE_SIZE;
 
-pub fn derive_keys_from_secret(shared_secret: &SharedSecret) -> Result<(B128, B256), EciesError> {
+pub fn derive_keys_from_secret(shared_secret: &SharedSecret) -> Result<(B128, B256), Error> {
     let mut concatenated = B256::default();
     concat_kdf::derive_key_into::<sha2::Sha256>(
         &shared_secret.secret_bytes(),
         &[],
         concatenated.as_mut_slice(),
     )
-    .map_err(|e| EciesError::ConcatKdf(e.to_string()))?;
+    .map_err(|e| Error::ConcatKdf(e.to_string()))?;
 
     let (encryption_key, authentication_digest) = split_b256_into_b128(concatenated);
 

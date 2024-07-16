@@ -5,5 +5,5 @@ use alloy_rlp::RlpDecodable;
 pub struct AuthAck {
     pub recipient_ephemeral_peer_id: B512,
     pub recipient_nonce: B256,
-    pub _ack_version: u8,
+    _ack_version: u8,
 }

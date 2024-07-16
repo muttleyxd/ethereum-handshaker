@@ -46,10 +46,10 @@ impl AuthRlp {
         let initiator_peer_id = public_key_to_peer_id(&initiator.keypair.public_key);
 
         let mut buf = BytesMut::new();
-        let auth_rlp = AuthRlp {
+        let auth_rlp = Self {
             signature,
             initiator_peer_id,
-            initiator_nonce: initiator.nonce.to_owned(),
+            initiator_nonce: initiator.nonce,
             auth_version: AUTH_VERSION,
         };
         auth_rlp.encode(&mut buf);

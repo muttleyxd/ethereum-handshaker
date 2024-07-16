@@ -2,7 +2,7 @@ use secp256k1::SecretKey;
 
 use crate::{
     keypair::Keypair,
-    rlpx::ecies::{decrypt, encrypt, EciesError},
+    rlpx::ecies::{decrypt, encrypt, Error},
 };
 
 #[test]
@@ -73,13 +73,13 @@ fn test_encrypt_and_decrypt_failed_message_malformed() {
     )
     .unwrap();
 
-    let mut malformed_public_key = valid_encrypted.to_owned();
+    let mut malformed_public_key = valid_encrypted.clone();
     malformed_public_key[32] = 0;
     let result = decrypt(&malformed_public_key, &recipient_keypair.secret_key);
-    assert!(matches!(result, Err(EciesError::Secp256k1(_))));
+    assert!(matches!(result, Err(Error::Secp256k1(_))));
 
     let mut malformed_payload = valid_encrypted;
     malformed_payload[67] = 0;
     let result = decrypt(&malformed_payload, &recipient_keypair.secret_key);
-    assert!(matches!(result, Err(EciesError::PayloadSignatureMismatch)));
+    assert!(matches!(result, Err(Error::PayloadSignatureMismatch)));
 }
