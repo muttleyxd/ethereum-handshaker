@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-mod common;
+pub mod common;
 mod decrypt;
 mod encrypt;
 

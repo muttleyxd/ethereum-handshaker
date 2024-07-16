@@ -2,7 +2,7 @@ use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes128,
 };
-use alloy_primitives::B128;
+use alloy_primitives::{B128, B256};
 use ctr::Ctr64BE;
 use secp256k1::{rand::random, PublicKey};
 
@@ -43,22 +43,39 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
         encrypted_message_size,
     );
 
-    // todo: to function compose_message
+    let message = compose_message(
+        encrypted_message_size,
+        &temporary_keypair.public_key,
+        initialization_vector,
+        encrypted_payload,
+        payload_signature,
+    );
+
+    if message.len() != encrypted_message_size + I16_SIZE {
+        return Err(EciesError::InvalidEncryptedMesssageLength(
+            encrypted_message_size,
+            message.len(),
+        ));
+    }
+
+    Ok(message)
+}
+
+fn compose_message(
+    encrypted_message_size: usize,
+    temporary_public_key: &PublicKey,
+    initialization_vector: B128,
+    encrypted_payload: Vec<u8>,
+    payload_signature: B256,
+) -> Vec<u8> {
     let mut result: Vec<u8> = Vec::with_capacity(encrypted_message_size + I16_SIZE);
 
     let message_size_as_u16 = encrypted_message_size as u16;
     result.extend_from_slice(&message_size_as_u16.to_be_bytes());
-    result.extend_from_slice(&temporary_keypair.public_key.serialize_uncompressed());
+    result.extend(temporary_public_key.serialize_uncompressed());
     result.extend(initialization_vector);
     result.extend(encrypted_payload);
     result.extend(payload_signature);
 
-    if result.len() != encrypted_message_size + I16_SIZE {
-        return Err(EciesError::InvalidEncryptedMesssageLength(
-            encrypted_message_size,
-            result.len(),
-        ));
-    }
-
-    Ok(result)
+    result
 }

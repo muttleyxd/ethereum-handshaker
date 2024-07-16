@@ -14,11 +14,13 @@ type SignatureWithRecoveryId = [u8; 65];
 
 #[derive(Debug, RlpEncodable)]
 pub struct AuthRlp {
-    signature: SignatureWithRecoveryId,
-    initiator_peer_id: B512,
-    initiator_nonce: B256,
-    auth_version: usize,
+    pub signature: SignatureWithRecoveryId,
+    pub initiator_peer_id: B512,
+    pub initiator_nonce: B256,
+    pub auth_version: usize,
 }
+
+const AUTH_VERSION: usize = 4;
 
 impl AuthRlp {
     pub fn create_rlp_bytes(
@@ -51,7 +53,7 @@ impl AuthRlp {
             signature,
             initiator_peer_id,
             initiator_nonce: initiator.nonce.to_owned(),
-            auth_version: 5, // todo: magic constant
+            auth_version: AUTH_VERSION,
         };
         auth_rlp.encode(&mut buf);
 
