@@ -7,6 +7,7 @@ use crate::{
 
 mod ecies;
 mod handshake;
+mod mac;
 
 pub struct Rlpx {
     handshake_completed: bool,

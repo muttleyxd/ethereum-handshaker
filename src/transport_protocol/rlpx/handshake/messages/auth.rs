@@ -7,7 +7,10 @@ use secp256k1::{ecdh::SharedSecret, SECP256K1};
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::handshake::common::public_key_to_peer_id,
+    transport_protocol::rlpx::{
+        ecies::{common::create_shared_secret, EciesError},
+        handshake::common::public_key_to_peer_id,
+    },
 };
 
 type SignatureWithRecoveryId = [u8; 65];
@@ -27,12 +30,12 @@ impl AuthRlp {
         initiator: &Initiator,
         initiator_ephemeral_key: &Keypair,
         recipient: &Recipient,
-    ) -> BytesMut {
+    ) -> Result<BytesMut, secp256k1::Error> {
         let static_shared_secret =
-            SharedSecret::new(&recipient.public_key, &initiator.keypair.secret_key);
+            create_shared_secret(&initiator.keypair.secret_key, &recipient.public_key)?;
         let message = initiator
             .nonce
-            .bitxor(static_shared_secret.secret_bytes().into());
+            .bit_xor(static_shared_secret.secret_bytes().into());
 
         let (public_key_recovery_id, signature_bytes) = SECP256K1
             .sign_ecdsa_recoverable(
@@ -57,6 +60,6 @@ impl AuthRlp {
         };
         auth_rlp.encode(&mut buf);
 
-        buf
+        Ok(buf)
     }
 }

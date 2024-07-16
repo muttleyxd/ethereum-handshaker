@@ -3,7 +3,7 @@ use alloy_rlp::{RlpDecodable, RlpEncodable};
 
 #[derive(Debug, RlpDecodable, RlpEncodable)]
 pub struct Hello {
-    pub protocol_version: usize,
+    pub protocol_version: u8,
     pub client_id: String,
     pub capabilities: Vec<HelloCapability>,
     pub listen_port: u16,
@@ -18,7 +18,7 @@ pub struct HelloCapability {
 
 impl Hello {
     pub fn new(peer_id: B512) -> Self {
-        const PROTOCOL_VERSION: usize = 5;
+        const PROTOCOL_VERSION: u8 = 5;
         const CLIENT_ID: &str = "handshaker_dummy_client/1.0";
         const ETH_PROTOCOL_NAME: &str = "eth";
         const ETH_PROTOCOL_VERSION: usize = 68;
