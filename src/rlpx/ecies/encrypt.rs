@@ -24,7 +24,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
 
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
-    let initialization_vector: B128Z = B128Z::new(random::<[u8; 16]>());
+    let initialization_vector = B128Z::new(random::<[u8; 16]>());
 
     let mut encryptor = Ctr64BE::<Aes128>::new(
         encryption_key.0.as_ref().into(),
@@ -47,7 +47,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
     let message = compose_message(
         encrypted_message_size,
         &temporary_keypair.public_key,
-        initialization_vector,
+        &initialization_vector,
         encrypted_payload,
         payload_signature,
     );
@@ -65,7 +65,7 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
 fn compose_message(
     encrypted_message_size: usize,
     temporary_public_key: &PublicKey,
-    initialization_vector: B128Z,
+    initialization_vector: &B128Z,
     encrypted_payload: Vec<u8>,
     payload_signature: B256,
 ) -> Vec<u8> {

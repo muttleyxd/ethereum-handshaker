@@ -1,4 +1,4 @@
-use alloy_primitives::{bytes::BufMut};
+use alloy_primitives::bytes::BufMut;
 use alloy_rlp::{Decodable, Encodable};
 use zeroize::Zeroizing;
 
@@ -33,13 +33,13 @@ impl B256Z {
 
 impl Decodable for B256Z {
     fn decode(buf: &mut &[u8]) -> alloy_rlp::Result<Self> {
-        Ok(B256Z::new(<[u8; 32]>::decode(buf)?))
+        Ok(Self::new(<[u8; 32]>::decode(buf)?))
     }
 }
 
 impl Encodable for B256Z {
     fn encode(&self, out: &mut dyn BufMut) {
-        self.0.as_ref().encode(out)
+        self.0.as_ref().encode(out);
     }
 }
 

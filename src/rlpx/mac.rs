@@ -55,7 +55,7 @@ impl MessageAuthenticationCode {
 
 #[cfg(test)]
 mod tests {
-    use alloy_primitives::{B128};
+    use alloy_primitives::B128;
 
     use crate::{rlpx::mac::MessageAuthenticationCode, types::B256Z};
 
