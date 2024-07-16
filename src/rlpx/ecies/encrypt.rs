@@ -8,7 +8,7 @@ use secp256k1::{rand::random, PublicKey};
 
 use crate::{
     keypair::Keypair,
-    transport_protocol::rlpx::ecies::{
+    rlpx::ecies::{
         common::{
             calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
             MESSAGE_SIZE_WITHOUT_PAYLOAD,

@@ -6,7 +6,7 @@ use alloy_primitives::{B128, B256};
 use ctr::Ctr64BE;
 use secp256k1::{constants::UNCOMPRESSED_PUBLIC_KEY_SIZE, PublicKey, SecretKey};
 
-use crate::transport_protocol::rlpx::ecies::{
+use crate::rlpx::ecies::{
     common::{
         calculate_signature, create_shared_secret, derive_keys_from_secret, I16_SIZE,
         INITIALIZATION_VECTOR_SIZE, MESSAGE_SIZE_WITHOUT_PAYLOAD, PAYLOAD_SIGNATURE_SIZE,

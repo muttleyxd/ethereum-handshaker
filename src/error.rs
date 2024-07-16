@@ -1,6 +1,6 @@
 use thiserror::Error;
 
-use crate::{peers::recipient::RecipientCreateError, transport_protocol::rlpx::RlpxError};
+use crate::{peers::recipient::RecipientCreateError, rlpx::RlpxError};
 
 #[derive(Debug, Error)]
 pub enum EthereumHandshakerError {

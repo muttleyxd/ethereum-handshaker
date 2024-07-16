@@ -1,6 +1,6 @@
 use std::fmt::Formatter;
 
-use crate::transport_protocol::rlpx::handshake::codecs::auth_ack::messages::auth_ack::AuthAck;
+use crate::rlpx::handshake::codecs::auth_ack::messages::auth_ack::AuthAck;
 
 pub mod auth;
 pub mod auth_ack;

@@ -5,9 +5,7 @@ use secp256k1::SECP256K1;
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::{
-        ecies::common::create_shared_secret, handshake::common::public_key_to_peer_id,
-    },
+    rlpx::{ecies::common::create_shared_secret, handshake::common::public_key_to_peer_id},
 };
 
 type SignatureWithRecoveryId = [u8; 65];

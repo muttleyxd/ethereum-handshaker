@@ -4,13 +4,13 @@ use crate::{
     error::EthereumHandshakerError,
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::Rlpx,
+    rlpx::Rlpx,
 };
 
 mod error;
 mod keypair;
 mod peers;
-mod transport_protocol;
+mod rlpx;
 
 #[tokio::main]
 async fn main() -> Result<(), EthereumHandshakerError> {

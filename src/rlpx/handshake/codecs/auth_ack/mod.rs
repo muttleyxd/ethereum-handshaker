@@ -6,7 +6,7 @@ use tokio_util::codec::{Decoder, Encoder};
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::{
+    rlpx::{
         ecies,
         handshake::{
             codecs::auth_ack::messages::{auth::AuthRlp, auth_ack::AuthAck, Message},

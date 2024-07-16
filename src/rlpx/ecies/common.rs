@@ -7,7 +7,7 @@ use secp256k1::{
 };
 use sha2::Digest;
 
-use crate::transport_protocol::rlpx::ecies::EciesError;
+use crate::rlpx::ecies::EciesError;
 
 pub const I16_SIZE: usize = (i16::BITS / 8) as usize;
 pub const INITIALIZATION_VECTOR_SIZE: usize = 16;

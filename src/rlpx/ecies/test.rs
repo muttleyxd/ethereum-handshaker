@@ -2,7 +2,7 @@ use secp256k1::SecretKey;
 
 use crate::{
     keypair::Keypair,
-    transport_protocol::rlpx::ecies::{decrypt, encrypt, EciesError},
+    rlpx::ecies::{decrypt, encrypt, EciesError},
 };
 
 #[test]

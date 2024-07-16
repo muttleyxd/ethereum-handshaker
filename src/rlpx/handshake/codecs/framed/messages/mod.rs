@@ -1,6 +1,6 @@
 use std::fmt::Formatter;
 
-use crate::transport_protocol::rlpx::handshake::codecs::framed::messages::hello::Hello;
+use crate::rlpx::handshake::codecs::framed::messages::hello::Hello;
 
 pub mod hello;
 

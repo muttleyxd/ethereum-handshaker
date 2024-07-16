@@ -7,7 +7,7 @@ use tokio_util::codec::FramedParts;
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
-    transport_protocol::rlpx::{
+    rlpx::{
         ecies,
         handshake::{
             codecs::{

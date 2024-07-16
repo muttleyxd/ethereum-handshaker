@@ -10,7 +10,7 @@ use tokio_util::codec::{Decoder, Encoder};
 use crate::{
     keypair::Keypair,
     peers::initiator::Initiator,
-    transport_protocol::rlpx::{
+    rlpx::{
         ecies::common::create_shared_secret,
         handshake::{
             codecs::{
@@ -220,9 +220,7 @@ impl Decoder for FramedCodec {
 
 fn keccak256_hash(elements: &[impl AsRef<[u8]>]) -> B256 {
     let mut hasher = Keccak256::new();
-    elements
-        .iter()
-        .for_each(|element| hasher.update(element));
+    elements.iter().for_each(|element| hasher.update(element));
     hasher.finalize()
 }
 
@@ -262,7 +260,7 @@ fn calculate_frame_data_length(len: usize) -> usize {
 
 #[cfg(test)]
 mod tests {
-    use crate::transport_protocol::rlpx::handshake::{
+    use crate::rlpx::handshake::{
         codecs::framed::{calculate_frame_data_length, u24_be_to_usize, usize_to_u24_be, U24_MAX},
         HandshakeError,
     };

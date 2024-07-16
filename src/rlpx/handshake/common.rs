@@ -18,9 +18,7 @@ pub fn peer_id_to_public_key(peer_id: B512) -> Result<PublicKey, secp256k1::Erro
 mod tests {
     use secp256k1::{rand::rngs::OsRng, SECP256K1};
 
-    use crate::transport_protocol::rlpx::handshake::common::{
-        peer_id_to_public_key, public_key_to_peer_id,
-    };
+    use crate::rlpx::handshake::common::{peer_id_to_public_key, public_key_to_peer_id};
 
     #[test]
     fn from_and_into() {
