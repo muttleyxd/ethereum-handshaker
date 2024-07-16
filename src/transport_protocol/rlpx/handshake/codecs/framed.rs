@@ -1,4 +1,3 @@
-use std::ops::BitXor;
 
 use aes::{
     cipher::{KeyIvInit, StreamCipher},
@@ -7,19 +6,17 @@ use aes::{
 use alloy_primitives::{bytes::BytesMut, Keccak256, B128, B256};
 use alloy_rlp::{Decodable, Encodable};
 use ctr::Ctr64BE;
-use secp256k1::{ecdh::SharedSecret, rand::random, PublicKey, SecretKey};
+use secp256k1::{ecdh::SharedSecret, PublicKey};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
     transport_protocol::rlpx::{
-        ecies,
         ecies::common::create_shared_secret,
         handshake::{
             codecs::auth_ack::AuthAckCodec,
             common::peer_id_to_public_key,
-            messages,
             messages::{AuthAck, Hello, Message},
             HandshakeError,
         },

@@ -1,14 +1,13 @@
-use std::ops::BitXor;
 
 use alloy_primitives::{bytes::BytesMut, B256, B512};
 use alloy_rlp::{Encodable, RlpEncodable};
-use secp256k1::{ecdh::SharedSecret, SECP256K1};
+use secp256k1::{SECP256K1};
 
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient::Recipient},
     transport_protocol::rlpx::{
-        ecies::{common::create_shared_secret, EciesError},
+        ecies::{common::create_shared_secret},
         handshake::common::public_key_to_peer_id,
     },
 };

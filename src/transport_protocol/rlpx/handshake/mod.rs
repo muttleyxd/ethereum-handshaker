@@ -1,5 +1,4 @@
-use alloy_primitives::keccak256;
-use futures::{sink::SinkExt, TryStreamExt};
+use futures::{sink::SinkExt};
 use thiserror::Error;
 use tokio::net::TcpStream;
 use tokio_stream::StreamExt;

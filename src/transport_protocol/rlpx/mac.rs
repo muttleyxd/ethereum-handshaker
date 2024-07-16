@@ -1,10 +1,10 @@
 use aes::{
-    cipher::{BlockEncrypt, InvalidLength, Key, KeyInit},
+    cipher::{BlockEncrypt, KeyInit},
     Aes256Enc, Block,
 };
 use alloy_primitives::{Keccak256, B128, B256};
 
-use crate::transport_protocol::rlpx::{ecies::encrypt, handshake::HandshakeError};
+use crate::transport_protocol::rlpx::{handshake::HandshakeError};
 
 #[derive(Clone, Debug)]
 pub struct MessageAuthenticationCode {
