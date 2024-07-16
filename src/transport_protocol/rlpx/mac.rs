@@ -4,7 +4,7 @@ use aes::{
 };
 use alloy_primitives::{Keccak256, B128, B256};
 
-use crate::transport_protocol::rlpx::{handshake::HandshakeError};
+use crate::transport_protocol::rlpx::handshake::HandshakeError;
 
 #[derive(Clone, Debug)]
 pub struct MessageAuthenticationCode {

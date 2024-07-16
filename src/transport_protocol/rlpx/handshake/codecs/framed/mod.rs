@@ -1,4 +1,3 @@
-
 use aes::{
     cipher::{KeyIvInit, StreamCipher},
     Aes256,
@@ -6,38 +5,36 @@ use aes::{
 use alloy_primitives::{bytes::BytesMut, Keccak256, B128, B256};
 use alloy_rlp::{Decodable, Encodable};
 use ctr::Ctr64BE;
-use secp256k1::{ecdh::SharedSecret, PublicKey};
 use tokio_util::codec::{Decoder, Encoder};
 
 use crate::{
     keypair::Keypair,
-    peers::{initiator::Initiator, recipient::Recipient},
+    peers::initiator::Initiator,
     transport_protocol::rlpx::{
         ecies::common::create_shared_secret,
         handshake::{
-            codecs::auth_ack::AuthAckCodec,
+            codecs::{
+                auth_ack::{messages::auth_ack::AuthAck, AuthAckCodec},
+                framed::messages::{hello::Hello, Message},
+            },
             common::peer_id_to_public_key,
-            messages::{AuthAck, Hello, Message},
             HandshakeError,
         },
         mac::MessageAuthenticationCode,
     },
 };
 
+pub mod messages;
+
 const FRAME_HEADER_PART_SIZE: usize = 16;
 
 const FRAME_HEADER_SIZE: usize = 32;
+const HELLO_MESSAGE_ID: u8 = 0;
 const MAC_SIZE: usize = 16;
 const U24_SIZE: usize = 3;
 const U24_MAX: usize = 0xFFFFFF;
 
-pub struct FramedCodec<'a> {
-    ephemeral_shared_secret: SharedSecret,
-    initiator: &'a Initiator,
-    initiator_ephemeral_key: Keypair,
-    recipient: &'a Recipient,
-    recipient_data: RecipientData,
-
+pub struct FramedCodec {
     ingress_aes: Ctr64BE<Aes256>,
     egress_aes: Ctr64BE<Aes256>,
 
@@ -45,16 +42,10 @@ pub struct FramedCodec<'a> {
     egress_mac: MessageAuthenticationCode,
 }
 
-struct RecipientData {
-    pub nonce: B256,
-    pub ephemeral_public_key: PublicKey,
-}
-
-impl<'a> FramedCodec<'a> {
+impl FramedCodec {
     pub fn new(
-        initiator: &'a Initiator,
+        initiator: &Initiator,
         initiator_ephemeral_key: Keypair,
-        recipient: &'a Recipient,
         auth_ack: AuthAck,
         auth_ack_codec: AuthAckCodec,
     ) -> Result<Self, HandshakeError> {
@@ -94,14 +85,6 @@ impl<'a> FramedCodec<'a> {
         egress_mac.update(outgoing_message);
 
         Ok(Self {
-            ephemeral_shared_secret,
-            initiator,
-            initiator_ephemeral_key,
-            recipient,
-            recipient_data: RecipientData {
-                nonce: auth_ack.recipient_nonce,
-                ephemeral_public_key: recipient_ephemeral_public_key,
-            },
             ingress_aes,
             egress_aes,
             ingress_mac,
@@ -191,7 +174,7 @@ impl<'a> FramedCodec<'a> {
             .ok_or(HandshakeError::MessageTooSmall(frame_data.len(), MAC_SIZE))?;
         let (frame_part, recipient_egress_mac) = frame_data.split_at_mut(mac_split_index);
 
-        self.ingress_mac.update_frame_data(&frame_part)?;
+        self.ingress_mac.update_frame_data(frame_part)?;
         if self.ingress_mac.current_digest().0 != *recipient_egress_mac {
             return Err(HandshakeError::FrameDataIngressMacCheckFailed);
         }
@@ -203,37 +186,34 @@ impl<'a> FramedCodec<'a> {
     }
 }
 
-impl Encoder<Message> for FramedCodec<'_> {
+impl Encoder<Message> for FramedCodec {
     type Error = HandshakeError;
 
     fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
         match item {
             Message::Hello(value) => {
                 let mut buffer = BytesMut::new();
-                0usize.encode(&mut buffer);
+                HELLO_MESSAGE_ID.encode(&mut buffer);
                 value.encode(&mut buffer);
                 *dst = self.message_to_frame(buffer)?;
                 Ok(())
             }
-            _ => Err(HandshakeError::UnsupportedOperation),
         }
     }
 }
 
-impl Decoder for FramedCodec<'_> {
+impl Decoder for FramedCodec {
     type Item = Message;
     type Error = HandshakeError;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
-        const HELLO_MESSAGE_ID: u8 = 0;
-
         let (frame_data, frame_data_length) = self.read_header(src)?;
         let (mut message_id_as_rlp, mut message_as_rlp) =
             self.read_frame_data(frame_data, frame_data_length)?;
 
         match u8::decode(&mut message_id_as_rlp)? {
             HELLO_MESSAGE_ID => Ok(Some(Message::Hello(Hello::decode(&mut message_as_rlp)?))),
-            value => Err(HandshakeError::UnsupportedMessageId(value)),
+            value => Err(HandshakeError::ReceivedUnknownMessage(value)),
         }
     }
 }
@@ -241,7 +221,7 @@ impl Decoder for FramedCodec<'_> {
 fn keccak256_hash(elements: &[impl AsRef<[u8]>]) -> B256 {
     let mut hasher = Keccak256::new();
     elements
-        .into_iter()
+        .iter()
         .for_each(|element| hasher.update(element));
     hasher.finalize()
 }

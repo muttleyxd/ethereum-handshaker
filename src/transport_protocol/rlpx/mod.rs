@@ -1,3 +1,4 @@
+use alloy_primitives::B512;
 use thiserror::Error;
 
 use crate::{
@@ -16,9 +17,22 @@ pub struct Rlpx {
     stream: tokio::net::TcpStream,
 }
 
+// allowing dead code since we're using Debug to print this information to the user
+#[allow(dead_code)]
 #[derive(Debug)]
 pub struct NodeInfo {
-    pub version: u8,
+    pub protocol_version: u8,
+    pub client_id: String,
+    pub capabilities: Vec<NodeCapability>,
+    pub peer_id: B512,
+}
+
+// allowing dead code since we're using Debug to print this information to the user
+#[allow(dead_code)]
+#[derive(Debug)]
+pub struct NodeCapability {
+    pub name: String,
+    pub version: usize,
 }
 
 impl Rlpx {
@@ -38,11 +52,23 @@ impl Rlpx {
             return Err(RlpxError::HandshakeAlreadyCompleted);
         }
 
-        let node_info =
+        let recipient_hello =
             handshake::handshake(&mut self.stream, &self.initiator, &self.recipient).await?;
         self.handshake_completed = true;
 
-        Ok(node_info)
+        Ok(NodeInfo {
+            protocol_version: recipient_hello.protocol_version,
+            client_id: recipient_hello.client_id,
+            capabilities: recipient_hello
+                .capabilities
+                .into_iter()
+                .map(|capability| NodeCapability {
+                    name: capability.name,
+                    version: capability.version,
+                })
+                .collect(),
+            peer_id: recipient_hello.peer_id,
+        })
     }
 }
 

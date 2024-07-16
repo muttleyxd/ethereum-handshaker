@@ -9,12 +9,13 @@ use crate::{
     transport_protocol::rlpx::{
         ecies,
         handshake::{
-            messages,
-            messages::{AuthAck, Message},
+            codecs::auth_ack::messages::{auth::AuthRlp, auth_ack::AuthAck, Message},
             HandshakeError,
         },
     },
 };
+
+pub mod messages;
 
 pub struct AuthAckCodec<'a> {
     initiator: &'a Initiator,
@@ -61,7 +62,7 @@ impl Encoder<Message> for AuthAckCodec<'_> {
     fn encode(&mut self, item: Message, dst: &mut BytesMut) -> Result<(), Self::Error> {
         match item {
             Message::Auth => {
-                let mut message = messages::AuthRlp::create_rlp_bytes(
+                let mut message = AuthRlp::create_rlp_bytes(
                     self.initiator,
                     &self.initiator_ephemeral_key,
                     self.recipient,
