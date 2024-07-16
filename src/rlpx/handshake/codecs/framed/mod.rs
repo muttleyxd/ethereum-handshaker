@@ -14,7 +14,7 @@ use crate::{
         ecies::common::create_shared_secret,
         handshake::{
             codecs::{
-                auth_ack::{messages::auth_ack::AuthAck, AuthAckCodec},
+                auth_ack::messages::auth_ack::AuthAck,
                 framed::messages::{hello::Hello, Message},
             },
             common::peer_id_to_public_key,
@@ -47,11 +47,9 @@ impl FramedCodec {
         initiator: &Initiator,
         initiator_ephemeral_key: Keypair,
         auth_ack: AuthAck,
-        auth_ack_codec: AuthAckCodec,
+        incoming_message: &[u8],
+        outgoing_message: &[u8],
     ) -> Result<Self, HandshakeError> {
-        let (incoming_message, outgoing_message) =
-            auth_ack_codec.get_encrypted_messages_for_hashing()?;
-
         let recipient_ephemeral_public_key =
             peer_id_to_public_key(auth_ack.recipient_ephemeral_peer_id)?;
         let ephemeral_shared_secret = create_shared_secret(

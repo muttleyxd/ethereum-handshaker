@@ -42,9 +42,9 @@ impl<'a> AuthAckCodec<'a> {
         }
     }
 
-    pub fn get_encrypted_messages_for_hashing(&self) -> Result<(&[u8], &[u8]), HandshakeError> {
-        match (&self.incoming_message, &self.outgoing_message) {
-            (Some(incoming), Some(outgoing)) => Ok((incoming.as_slice(), outgoing.as_slice())),
+    pub fn into_messages_for_hashing(self) -> Result<(Vec<u8>, Vec<u8>), HandshakeError> {
+        match (self.incoming_message, self.outgoing_message) {
+            (Some(incoming), Some(outgoing)) => Ok((incoming, outgoing)),
             _ => Err(HandshakeError::AuthAckNotCompleted),
         }
     }

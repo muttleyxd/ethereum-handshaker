@@ -57,7 +57,7 @@ impl MessageAuthenticationCode {
 mod tests {
     use alloy_primitives::{B128, B256};
 
-    use crate::transport_protocol::rlpx::mac::MessageAuthenticationCode;
+    use crate::rlpx::mac::MessageAuthenticationCode;
 
     const INITIAL_DIGEST: B128 = B128::new([
         197, 210, 70, 1, 134, 247, 35, 60, 146, 126, 125, 178, 220, 199, 3, 192,

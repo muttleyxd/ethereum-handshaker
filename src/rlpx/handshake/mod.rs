@@ -24,9 +24,46 @@ use crate::{
 mod codecs;
 mod common;
 
+pub async fn handshake<'a>(
+    stream: &mut TcpStream,
+    initiator: &'a Initiator,
+    recipient: &Recipient,
+) -> Result<Hello, HandshakeError> {
+    let initiator_ephemeral_key = Keypair::generate_keypair();
+
+    let AuthAckResult {
+        auth_ack,
+        incoming_message_for_hashing,
+        outgoing_message_for_hashing,
+        stream,
+    } = auth_ack(stream, initiator, &initiator_ephemeral_key, recipient).await?;
+
+    let framed_codec = FramedCodec::new(
+        initiator,
+        initiator_ephemeral_key,
+        auth_ack,
+        &incoming_message_for_hashing,
+        &outgoing_message_for_hashing,
+    )?;
+    let mut framed_stream = tokio_util::codec::Framed::new(stream, framed_codec);
+
+    let message = Hello::new(public_key_to_peer_id(&initiator.keypair.public_key));
+    framed_stream
+        .send(framed::messages::Message::Hello(message))
+        .await?;
+
+    let received_message = framed_stream
+        .next()
+        .await
+        .ok_or(HandshakeError::StreamClosedUnexpectedly)??;
+
+    match received_message {
+        framed::messages::Message::Hello(recipient_hello) => Ok(recipient_hello),
+    }
+}
+
 #[derive(Debug, Error)]
 pub enum HandshakeError {
-    // todo: split between authack and framed
     #[error("Auth-Ack not completed")]
     AuthAckNotCompleted,
     #[error("Invalid message received, expected: `{0}`, actual: `{1}`")]
@@ -64,13 +101,19 @@ pub enum HandshakeError {
     Secp256k1(#[from] secp256k1::Error),
 }
 
-pub async fn handshake<'a>(
-    stream: &mut TcpStream,
-    initiator: &'a Initiator,
-    recipient: &Recipient,
-) -> Result<Hello, HandshakeError> {
-    let initiator_ephemeral_key = Keypair::generate_keypair();
+struct AuthAckResult<'a> {
+    auth_ack: AuthAck,
+    incoming_message_for_hashing: Vec<u8>,
+    outgoing_message_for_hashing: Vec<u8>,
+    stream: &'a mut TcpStream,
+}
 
+async fn auth_ack<'a>(
+    stream: &'a mut TcpStream,
+    initiator: &'a Initiator,
+    initiator_ephemeral_key: &Keypair,
+    recipient: &Recipient,
+) -> Result<AuthAckResult<'a>, HandshakeError> {
     let auth_ack_codec =
         AuthAckCodec::new(initiator, initiator_ephemeral_key.to_owned(), recipient);
     let mut auth_ack_stream = tokio_util::codec::Framed::new(stream, auth_ack_codec);
@@ -87,22 +130,15 @@ pub async fn handshake<'a>(
 
     let FramedParts { io, codec, .. } = auth_ack_stream.into_parts();
 
-    let framed_codec = FramedCodec::new(initiator, initiator_ephemeral_key, auth_ack, codec)?;
-    let mut framed_stream = tokio_util::codec::Framed::new(io, framed_codec);
+    let (incoming_message_for_hashing, outgoing_message_for_hashing) =
+        codec.into_messages_for_hashing()?;
 
-    let message = Hello::new(public_key_to_peer_id(&initiator.keypair.public_key));
-    framed_stream
-        .send(framed::messages::Message::Hello(message))
-        .await?;
-
-    let received_message = framed_stream
-        .next()
-        .await
-        .ok_or(HandshakeError::StreamClosedUnexpectedly)??;
-
-    match received_message {
-        framed::messages::Message::Hello(recipient_hello) => Ok(recipient_hello),
-    }
+    Ok(AuthAckResult {
+        auth_ack,
+        incoming_message_for_hashing,
+        outgoing_message_for_hashing,
+        stream: io,
+    })
 }
 
 fn get_auth_ack_from_message(

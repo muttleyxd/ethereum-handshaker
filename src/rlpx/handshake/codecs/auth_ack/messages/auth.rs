@@ -39,7 +39,6 @@ impl AuthRlp {
             )
             .serialize_compact();
 
-        // todo: write this better
         let mut signature = [0u8; 65];
         signature[..64].copy_from_slice(&signature_bytes);
         signature[64] = public_key_recovery_id.to_i32() as u8;
