@@ -11,7 +11,7 @@ use sha2::Digest;
 
 use crate::{
     rlpx::ecies::Error,
-    types::{B128Z, B256Z},
+    types::{SharedSecretZ, B128Z, B256Z},
 };
 
 pub const I16_SIZE: usize = (i16::BITS / 8) as usize;
@@ -20,10 +20,10 @@ pub const PAYLOAD_SIGNATURE_SIZE: usize = 32;
 pub const MESSAGE_SIZE_WITHOUT_PAYLOAD: usize =
     UNCOMPRESSED_PUBLIC_KEY_SIZE + INITIALIZATION_VECTOR_SIZE + PAYLOAD_SIGNATURE_SIZE;
 
-pub fn derive_keys_from_secret(shared_secret: &SharedSecret) -> Result<(B128Z, B256Z), Error> {
+pub fn derive_keys_from_secret(shared_secret: &SharedSecretZ) -> Result<(B128Z, B256Z), Error> {
     let mut concatenated = B256Z::default();
     concat_kdf::derive_key_into::<sha2::Sha256>(
-        &shared_secret.secret_bytes(),
+        &shared_secret.0.secret_bytes(),
         &[],
         concatenated.0.as_mut_slice(),
     )
@@ -62,6 +62,8 @@ fn split_b256_into_b128(bytes: &[u8; 32]) -> Result<(B128Z, B128Z), TryFromSlice
 pub fn create_shared_secret(
     secret_key: &SecretKey,
     public_key: &PublicKey,
-) -> Result<SharedSecret, secp256k1::Error> {
-    SharedSecret::from_slice(&secp256k1::ecdh::shared_secret_point(public_key, secret_key)[0..32])
+) -> Result<SharedSecretZ, secp256k1::Error> {
+    Ok(SharedSecretZ::new(SharedSecret::from_slice(
+        &secp256k1::ecdh::shared_secret_point(public_key, secret_key)[0..32],
+    )?))
 }

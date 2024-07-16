@@ -68,16 +68,16 @@ impl FramedCodec {
         ]);
 
         let shared_secret =
-            keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *hashed_nonces.0]);
+            keccak256_hash(&[ephemeral_shared_secret.0.secret_bytes(), *hashed_nonces.0]);
         let aes_secret =
-            keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *shared_secret.0]);
+            keccak256_hash(&[ephemeral_shared_secret.0.secret_bytes(), *shared_secret.0]);
 
         let aes_initialization_vector = B128::default();
         let ingress_aes =
             Ctr64BE::<Aes256>::new(&(*aes_secret.0).into(), &aes_initialization_vector.0.into());
         let egress_aes = ingress_aes.clone();
 
-        let mac_secret = keccak256_hash(&[ephemeral_shared_secret.secret_bytes(), *aes_secret.0]);
+        let mac_secret = keccak256_hash(&[ephemeral_shared_secret.0.secret_bytes(), *aes_secret.0]);
 
         let mut ingress_mac = MessageAuthenticationCode::new(mac_secret.clone());
         ingress_mac.update(mac_secret.bitxor(initiator.nonce.0.as_slice()));

@@ -27,9 +27,11 @@ impl AuthRlp {
         initiator_ephemeral_key: &Keypair,
         recipient: &Recipient,
     ) -> Result<BytesMut, secp256k1::Error> {
-        let mut static_shared_secret =
+        let static_shared_secret =
             create_shared_secret(&initiator.keypair.secret_key, &recipient.public_key)?;
-        let message = initiator.nonce.bitxor(&static_shared_secret.secret_bytes());
+        let message = initiator
+            .nonce
+            .bitxor(&static_shared_secret.0.secret_bytes());
 
         let (public_key_recovery_id, signature_bytes) = SECP256K1
             .sign_ecdsa_recoverable(
@@ -52,8 +54,6 @@ impl AuthRlp {
             auth_version: AUTH_VERSION,
         };
         auth_rlp.encode(&mut buf);
-
-        static_shared_secret.non_secure_erase();
 
         Ok(buf)
     }

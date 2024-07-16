@@ -26,7 +26,7 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error>
         payload_signature,
     } = decompose_message(message)?;
 
-    let mut shared_secret = create_shared_secret(secret_key, &public_key)?;
+    let shared_secret = create_shared_secret(secret_key, &public_key)?;
     let (encryption_key, authentication_key) = derive_keys_from_secret(&shared_secret)?;
 
     let signature = calculate_signature(
@@ -46,8 +46,6 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error>
     decryptor
         .try_apply_keystream(encrypted_payload.as_mut_slice())
         .map_err(|e| Error::AesStreamCipher(e.to_string()))?;
-
-    shared_secret.non_secure_erase();
 
     Ok(encrypted_payload)
 }

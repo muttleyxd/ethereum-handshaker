@@ -1,5 +1,6 @@
 use alloy_primitives::bytes::BufMut;
 use alloy_rlp::{Decodable, Encodable};
+use secp256k1::ecdh::SharedSecret;
 use zeroize::Zeroizing;
 
 #[derive(Clone, Debug, Default)]
@@ -7,6 +8,9 @@ pub struct B128Z(pub Zeroizing<[u8; 16]>);
 
 #[derive(Clone, Debug, Default)]
 pub struct B256Z(pub Zeroizing<[u8; 32]>);
+
+#[derive(Clone, Debug)]
+pub struct SharedSecretZ(pub SharedSecret);
 
 impl B128Z {
     pub fn new(value: [u8; 16]) -> Self {
@@ -28,6 +32,18 @@ impl B256Z {
             .for_each(|(one, two)| *one ^= two);
 
         result
+    }
+}
+
+impl SharedSecretZ {
+    pub fn new(value: SharedSecret) -> Self {
+        Self(value)
+    }
+}
+
+impl Drop for SharedSecretZ {
+    fn drop(&mut self) {
+        self.0.non_secure_erase();
     }
 }
 
