@@ -92,7 +92,7 @@ impl Decoder for AuthAckCodec<'_> {
                     return Err(Error::StreamClosedUnexpectedly);
                 }
                 let length = u16::from_be_bytes([src[0], src[1]]) + 2;
-                let mut src = src.split_to(length as usize);
+                let src = src.split_to(length as usize);
 
                 self.state = State::Complete;
                 self.incoming_message = Some(src.to_vec());

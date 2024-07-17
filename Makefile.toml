@@ -58,6 +58,7 @@ script = '''
     -A clippy::unseparated_literal_suffix \
     -A clippy::use_debug \
     -A clippy::wildcard_enum_match_arm \
+    -A clippy::allow_attributes_without_reason \
 
 '''
 

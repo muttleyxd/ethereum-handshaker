@@ -17,12 +17,11 @@ async fn main() -> Result<(), EthereumHandshakerError> {
     let initiator = Initiator::new(keypair);
 
     let tasks: Vec<_> = std::env::args()
-        .into_iter()
         .skip(1)
         .map(|enode| {
             let initiator = initiator.clone();
             tokio::spawn(async move {
-                let result = try_handshake(initiator, enode.to_owned()).await;
+                let result = try_handshake(initiator, enode.clone()).await;
                 (result, enode)
             })
         })

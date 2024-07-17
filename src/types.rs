@@ -25,11 +25,9 @@ impl B256Z {
 
     pub fn bitxor(&self, other: &[u8]) -> Self {
         let mut result = self.clone();
-        result
-            .0
-            .iter_mut()
-            .zip(other)
-            .for_each(|(one, two)| *one ^= two);
+        result.0.iter_mut().zip(other).for_each(|(one, two)| {
+            *one ^= *two;
+        });
 
         result
     }

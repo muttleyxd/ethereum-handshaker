@@ -15,7 +15,7 @@ pub struct Rlpx {
 }
 
 // allowing dead code since we're using Debug to print this information to the user
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[derive(Debug)]
 pub struct NodeInfo {
     pub protocol_version: u8,
@@ -25,7 +25,7 @@ pub struct NodeInfo {
 }
 
 // allowing dead code since we're using Debug to print this information to the user
-#[allow(dead_code)]
+#[expect(dead_code)]
 #[derive(Debug)]
 pub struct NodeCapability {
     pub name: String,

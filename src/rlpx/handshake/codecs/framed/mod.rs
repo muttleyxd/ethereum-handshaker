@@ -11,6 +11,7 @@ use crate::{
     keypair::Keypair,
     peers::initiator::Initiator,
     rlpx::{
+        ecies,
         ecies::common::create_shared_secret,
         handshake::{
             codecs::{
@@ -72,10 +73,11 @@ impl FramedCodec {
         let aes_secret =
             keccak256_hash(&[ephemeral_shared_secret.0.secret_bytes(), *shared_secret.0]);
 
-        let aes_initialization_vector = B128::default();
+        let aes_initialization_vector = B128::new([0; 16]);
         let ingress_aes =
             Ctr64BE::<Aes256>::new(&(*aes_secret.0).into(), &aes_initialization_vector.0.into());
-        let egress_aes = ingress_aes.clone();
+        let egress_aes =
+            Ctr64BE::<Aes256>::new(&(*aes_secret.0).into(), &aes_initialization_vector.0.into());
 
         let mac_secret = keccak256_hash(&[ephemeral_shared_secret.0.secret_bytes(), *aes_secret.0]);
 
@@ -111,7 +113,9 @@ impl FramedCodec {
         header_part[0..3].copy_from_slice(&usize_to_u24_be(message_length)?);
         header_part[3..6].copy_from_slice(&HEADER_SIGNATURE_BYTES);
 
-        self.egress_aes.apply_keystream(&mut header_part);
+        self.egress_aes
+            .try_apply_keystream(&mut header_part)
+            .map_err(|e| ecies::Error::AesStreamCipher(e.to_string()))?;
         self.egress_mac.update_header(&header_part)?;
 
         let mut result = BytesMut::with_capacity(FRAME_HEADER_SIZE);
@@ -124,7 +128,9 @@ impl FramedCodec {
         let target_len = calculate_frame_data_length(message.len());
         message.resize(target_len, 0);
 
-        self.egress_aes.apply_keystream(message.as_mut());
+        self.egress_aes
+            .try_apply_keystream(message.as_mut())
+            .map_err(|e| ecies::Error::AesStreamCipher(e.to_string()))?;
         self.egress_mac.update_frame_data(&message)?;
 
         message.extend(self.egress_mac.current_digest());
@@ -146,7 +152,9 @@ impl FramedCodec {
             return Err(Error::HeaderIngressMacCheckFailed);
         }
 
-        self.ingress_aes.apply_keystream(header_part);
+        self.ingress_aes
+            .try_apply_keystream(header_part)
+            .map_err(|e| ecies::Error::AesStreamCipher(e.to_string()))?;
 
         let frame_data_length = u24_be_to_usize(&header_part[0..3])?;
 
@@ -173,7 +181,9 @@ impl FramedCodec {
             return Err(Error::FrameDataIngressMacCheckFailed);
         }
 
-        self.ingress_aes.apply_keystream(frame_part);
+        self.ingress_aes
+            .try_apply_keystream(frame_part)
+            .map_err(|e| ecies::Error::AesStreamCipher(e.to_string()))?;
 
         let (message_id_as_rlp, message_as_rlp) = frame_part.split_at(1);
         Ok((message_id_as_rlp, message_as_rlp))
@@ -201,6 +211,10 @@ impl Decoder for FramedCodec {
     type Error = Error;
 
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+        if src.is_empty() {
+            return Ok(None);
+        }
+
         let (frame_data, frame_data_length) = self.read_header(src)?;
         let (mut message_id_as_rlp, mut message_as_rlp) =
             self.read_frame_data(frame_data, frame_data_length)?;
