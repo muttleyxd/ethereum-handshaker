@@ -88,10 +88,15 @@ impl Decoder for AuthAckCodec<'_> {
     fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
         match self.state {
             State::AuthSent => {
+                if src.len() < (i16::BITS / 8) as usize {
+                    return Err(Error::StreamClosedUnexpectedly);
+                }
+                let length = u16::from_be_bytes([src[0], src[1]]) + 2;
+                let mut src = src.split_to(length as usize);
+
                 self.state = State::Complete;
                 self.incoming_message = Some(src.to_vec());
-
-                let decrypted = ecies::decrypt(src, &self.initiator.keypair.secret_key)?;
+                let decrypted = ecies::decrypt(&src, &self.initiator.keypair.secret_key)?;
                 let auth_ack = AuthAck::decode(&mut decrypted.as_slice())?;
                 Ok(Some(Message::AuthAck(auth_ack)))
             }
