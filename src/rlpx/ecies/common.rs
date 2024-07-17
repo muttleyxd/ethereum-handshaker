@@ -31,7 +31,7 @@ pub fn derive_keys_from_secret(shared_secret: &SharedSecretZ) -> Result<(B128Z, 
 
     let (encryption_key, authentication_digest) = split_b256_into_b128(&concatenated.0)?;
 
-    // todo: sha2::Sha256 could be removed if I would implement concat-kdf traits for alloy sha256
+    // todo: sha2 could be removed if I would implement concat-kdf traits for alloy sha256
     let authentication_key =
         B256Z::new(sha2::Sha256::digest(authentication_digest.0.as_slice())[0..32].try_into()?);
 
