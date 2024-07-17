@@ -1,11 +1,9 @@
-// todo: zeroize all secret and public key fields when dropping them
-
 use thiserror::Error;
 
 use crate::{
     keypair::Keypair,
     peers::{initiator::Initiator, recipient, recipient::Recipient},
-    rlpx::Rlpx,
+    rlpx::{NodeInfo, Rlpx},
 };
 
 mod keypair;
@@ -18,21 +16,47 @@ async fn main() -> Result<(), EthereumHandshakerError> {
     let keypair = get_keypair()?;
     let initiator = Initiator::new(keypair);
 
-    let recipient = Recipient::from_enode_str("enode://af22c29c316ad069cf48a09a4ad5cf04a251b411e45098888d114c6dd7f489a13786620d5953738762afa13711d4ffb3b19aa5de772d8af72f851f7e9c5b164a@127.0.0.1:30303")?;
+    let tasks: Vec<_> = std::env::args()
+        .into_iter()
+        .skip(1)
+        .map(|enode| {
+            let initiator = initiator.clone();
+            tokio::spawn(async move {
+                let result = try_handshake(initiator, enode.to_owned()).await;
+                (result, enode)
+            })
+        })
+        .collect();
+
+    let mut results = vec![];
+    for task in tasks {
+        results.push(task.await?);
+    }
+
+    results
+        .into_iter()
+        .for_each(|(result, enode)| match result {
+            Ok(node_info) => {
+                println!(
+                    "Handshake completed, displaying recipient info:\n----\n{node_info:#?}\n----\n"
+                );
+            }
+            Err(error) => {
+                eprintln!("Error during handshake with '{enode}': {error}");
+            }
+        });
+
+    Ok(())
+}
+
+async fn try_handshake(
+    initiator: Initiator,
+    enode: String,
+) -> Result<NodeInfo, EthereumHandshakerError> {
+    let recipient = Recipient::from_enode_str(&enode)?;
 
     let mut transport_protocol = Rlpx::new(initiator, recipient).await?;
-    match transport_protocol.handshake().await {
-        Ok(node_info) => {
-            println!(
-                "Handshake completed, displaying recipient info:\n----\n{node_info:#?}\n----\n"
-            );
-            Ok(())
-        }
-        Err(error) => {
-            eprintln!("Error during handshake: {error}");
-            Err(error.into())
-        }
-    }
+    Ok(transport_protocol.handshake().await?)
 }
 
 #[derive(Debug, Error)]
@@ -43,6 +67,8 @@ pub enum EthereumHandshakerError {
     RecipientCreate(#[from] recipient::Error),
     #[error("RLPx transport protocol error: `{0}`")]
     Rlpx(#[from] rlpx::Error),
+    #[error("Tokio task join error: `{0}`")]
+    TokioTaskJoin(#[from] tokio::task::JoinError),
 }
 
 fn get_keypair() -> Result<Keypair, std::io::Error> {
