@@ -139,15 +139,14 @@ impl FramedCodec {
     }
 
     fn read_header<'a>(&mut self, frame: &'a mut BytesMut) -> Result<(&'a mut [u8], usize), Error> {
-        if frame.len() < FRAME_HEADER_SIZE + 1 {
-            return Err(Error::MessageTooSmall(frame.len(), FRAME_HEADER_SIZE + 1));
+        if frame.len() < FRAME_HEADER_SIZE {
+            return Err(Error::MessageTooSmall(frame.len(), FRAME_HEADER_SIZE));
         }
-        let (header, frame_data) = frame.split_at_mut(FRAME_HEADER_SIZE);
 
+        let (header, frame_data) = frame.split_at_mut(FRAME_HEADER_SIZE);
         let (header_part, recipient_egress_mac) = header.split_at_mut(FRAME_HEADER_PART_SIZE);
 
         self.ingress_mac.update_header(header_part)?;
-
         if self.ingress_mac.current_digest().0 != *recipient_egress_mac {
             return Err(Error::HeaderIngressMacCheckFailed);
         }
@@ -156,9 +155,18 @@ impl FramedCodec {
             .try_apply_keystream(header_part)
             .map_err(|e| ecies::Error::AesStreamCipher(e.to_string()))?;
 
-        let frame_data_length = u24_be_to_usize(&header_part[0..3])?;
+        let frame_data_length = u24_be_to_usize(&header_part[0..3])? + 16;
+        let padding = frame_data_length % 16;
+        let frame_data_length = if padding > 0 {
+            frame_data_length + 16 - padding
+        } else {
+            frame_data_length
+        };
 
-        Ok((frame_data, frame_data_length))
+        Ok((
+            frame_data.split_at_mut(frame_data_length).0,
+            frame_data_length,
+        ))
     }
 
     fn read_frame_data<'a>(

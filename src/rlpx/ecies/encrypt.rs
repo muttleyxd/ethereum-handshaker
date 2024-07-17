@@ -27,8 +27,8 @@ pub fn encrypt(payload: &[u8], recipient_public_key: &PublicKey) -> Result<Vec<u
     let initialization_vector = B128Z::new(random::<[u8; 16]>());
 
     let mut encryptor = Ctr64BE::<Aes128>::new(
-        encryption_key.0.as_ref().into(),
-        initialization_vector.0.as_ref().into(),
+        encryption_key.0.as_slice().into(),
+        initialization_vector.0.as_slice().into(),
     );
     let mut encrypted_payload = payload.to_vec();
     encryptor

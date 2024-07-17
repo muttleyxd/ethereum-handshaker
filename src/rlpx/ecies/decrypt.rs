@@ -40,8 +40,8 @@ pub fn decrypt(message: &[u8], secret_key: &SecretKey) -> Result<Vec<u8>, Error>
     }
 
     let mut decryptor = Ctr64BE::<Aes128>::new(
-        encryption_key.0.as_ref().into(),
-        initialization_vector.0.as_ref().into(),
+        encryption_key.0.as_slice().into(),
+        initialization_vector.0.as_slice().into(),
     );
     decryptor
         .try_apply_keystream(encrypted_payload.as_mut_slice())
